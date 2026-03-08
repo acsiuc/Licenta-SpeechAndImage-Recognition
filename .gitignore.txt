@@ -1,0 +1,5 @@
+__pycache__/
+*.pt
+*.pth
+mavceleb_v1_test/
+mavceleb_embeddings/
