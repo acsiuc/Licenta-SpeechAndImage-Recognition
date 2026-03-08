@@ -40,3 +40,16 @@ class JointClassifier(nn.Module):
 
     def forward(self, x):
         return self.classifier(x)
+
+class ModalityTranslator(nn.Module):
+    def __init__(self, embedding_dim: int = 128):
+        super(ModalityTranslator, self).__init__()
+        #this translates the vectors
+        self.projector = nn.Sequential(
+            nn.Linear(embedding_dim, embeddin_dim),
+            nn.ReLU(),
+            nn.lineaar(embedding_dim, embedding_dim)
+        )
+    def forward(self,x):
+        x = self.projector(x)
+        return F.normalize(x, p=2, dim=1)
