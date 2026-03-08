@@ -4,8 +4,8 @@ import torch.nn as nn
 import glob
 import os
 from torch.utils.data import Dataset, DataLoader
-from models import JointClassifier
-from utils import orthogonal_projection_loss, EarlyStopping
+from models import JointClassifier, ModalityTranslator
+from utils import orthogonal_projection_loss, EarlyStopping, cross_modal_alignment_loss
 
 # Config
 EMBEDDING_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings"
@@ -44,27 +44,44 @@ if __name__ == "__main__":
     # We only train the Classifier now! (Encoders are frozen/done)
     # IMPORTANT: You need to know num_classes. 
     # For now, let's assume you pass it or calculate it.
-    model = JointClassifier(num_classes=10).to(DEVICE) 
+    model = JointClassifier(num_classes=1200).to(DEVICE) 
+    face_translator = ModalityTranslator().to(DEVICE)
+    voice_translator = ModalityTranslator().to(DEVICE)
     
+    params_to_train = list(model.parameters()) + list(face_translator.parameters()) + list(voice_translator.parameters())
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.CrossEntropyLoss()
     early_stopper = EarlyStopping(patience=5)
 
     for epoch in range(EPOCHS):
         model.train()
+        face_translator.train()  # Tell face translator to train
+        voice_translator.train() # Tell voice translator to train
         total_loss = 0
         
         for face_emb, voice_emb, labels in train_loader:
             face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE)
             
-            # Simple Fusion
+            # --- NEW: Translate the frozen vectors into aligned vectors ---
+            face_emb = face_translator(face_emb)
+            voice_emb = voice_translator(voice_emb)
+            
+            # 1. Calculate Alignment Loss
+            align_loss = cross_modal_alignment_loss(face_emb, voice_emb, labels)
+            
+            # 2. Simple Fusion
             fused_emb = face_emb + voice_emb
             fused_emb = torch.nn.functional.normalize(fused_emb, p=2, dim=1)
             
             optimizer.zero_grad()
             logits = model(fused_emb)
             
-            loss = criterion(logits, labels) + orthogonal_projection_loss(fused_emb, labels)
+            # 3. Calculate Classification & Orthogonal Loss
+            class_loss = criterion(logits, labels.view(-1))
+            ortho_loss = orthogonal_projection_loss(fused_emb, labels)
+            
+            # 4. Total Loss (alignment loss is weighted)
+            loss = class_loss + ortho_loss + (0.5 * align_loss)
             
             loss.backward()
             optimizer.step()
@@ -80,8 +97,9 @@ if __name__ == "__main__":
             print("Early stopping triggered")
             break
             
-        # Save Checkpoint (Note: "sa salvez la 20 epochs")
+        # Save Checkpoint (You might want to save translator weights later too!)
         if (epoch + 1) % 20 == 0:
             torch.save(model.state_dict(), f"checkpoint_epoch_{epoch+1}.pth")
 
     torch.save(model.state_dict(), "final_model.pth")
+
