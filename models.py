@@ -46,9 +46,9 @@ class ModalityTranslator(nn.Module):
         super(ModalityTranslator, self).__init__()
         #this translates the vectors
         self.projector = nn.Sequential(
-            nn.Linear(embedding_dim, embeddin_dim),
+            nn.Linear(embedding_dim, embedding_dim),
             nn.ReLU(),
-            nn.lineaar(embedding_dim, embedding_dim)
+            nn.Linear(embedding_dim, embedding_dim)
         )
     def forward(self,x):
         x = self.projector(x)
