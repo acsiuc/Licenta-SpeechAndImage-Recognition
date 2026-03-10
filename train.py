@@ -73,6 +73,14 @@ if __name__ == "__main__":
         
             class_loss = criterion(logits, labels.view(-1))
             ortho_loss = orthogonal_projection_loss(fused_emb, labels)
+
+            if epoch == 0 and total_loss == 0: # Only print on the very first step
+                print(f"\n--- DETECTIVE REPORT ---")
+                print(f"Class Loss: {class_loss.item():.4f}")
+                print(f"Ortho Loss: {ortho_loss.item():.4f}")
+                print(f"Align Loss: {align_loss.item():.4f}")
+                print(f"------------------------\n")
+                
             
             loss = class_loss + ortho_loss + (0.5 * align_loss)
             

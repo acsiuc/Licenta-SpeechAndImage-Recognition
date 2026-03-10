@@ -46,8 +46,8 @@ def cross_modal_alignment_loss(face_embeddings, voice_embeddings, labels, temper
     log_prob_voice_to_face = F.log_softmax(sim_matrix.T, dim =1)
 
     #compute mean loss overpositive pairs
-    loss_f2v = -(mask_pos * log_prob_face_to_voice).sum(dim=1)/(mask_pos.sum(dim=1)* 1e-6)
-    loss_v2f = -(mask_pos * log_prob_voice_to_face).sum(dim=1)/(mask_pos.sum(dim=1)* 1e-6)
+    loss_f2v = -(mask_pos * log_prob_face_to_voice).sum(dim=1)/(mask_pos.sum(dim=1)+ 1e-6)
+    loss_v2f = -(mask_pos * log_prob_voice_to_face).sum(dim=1)/(mask_pos.sum(dim=1)+ 1e-6)
 
     return (loss_f2v.mean() + loss_v2f.mean()) / 2.0
 
