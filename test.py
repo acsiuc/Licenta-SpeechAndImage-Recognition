@@ -18,7 +18,7 @@ def test_model():
     generator = torch.Generator().manual_seed(42)
     _, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size], generator=generator)
 
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    test_loader = DataLoader(train_dataset, batch_size=32, shuffle=False)
 
     model = JointClassifier(num_classes=NUM_CLASSES).to(DEVICE)
     face_translator = ModalityTranslator().to(DEVICE)
@@ -36,7 +36,6 @@ def test_model():
     correct_predictions = 0
     total_samples = 0
     
-    print("\nStarting the exam...")
     with torch.no_grad():
         for face_emb, voice_emb, labels in test_loader:
             face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE)
