@@ -38,14 +38,14 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = JointClassifier(num_classes=1200).to(DEVICE) 
-    face_translator = ModalityTranslator().to(DEVICE)
-    voice_translator = ModalityTranslator().to(DEVICE)
+    model = JointClassifier(num_classes=1200,embedding_dim=512).to(DEVICE) 
+    face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
+    voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
     
     params_to_train = list(model.parameters()) + list(face_translator.parameters()) + list(voice_translator.parameters())
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.CrossEntropyLoss()
-    early_stopper = EarlyStopping(patience=5)
+    early_stopper = EarlyStopping(patience=15)
 
     for epoch in range(EPOCHS):
         model.train()
