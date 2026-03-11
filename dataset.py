@@ -14,8 +14,8 @@ class MavCelebDataset(Dataset):
         self.rootDir = rootDir
         
         # setting up paths
-        self.faceRoot = os.path.join(rootDir, "faces", "English")
-        self.voiceRoot = os.path.join(rootDir, "voices", "English")
+        self.faceRoot = os.path.join(rootDir, "faces", "English") # path to the raw faces
+        self.voiceRoot = os.path.join(rootDir, "voices", "English") # path to the raw voices
 
         # check if main folders exist
         if not os.path.exists(self.faceRoot) or not os.path.exists(self.voiceRoot):
@@ -27,7 +27,7 @@ class MavCelebDataset(Dataset):
         # to get just the ID 
         self.identities = sorted([os.path.splitext(os.path.basename(f))[0] for f in faceFiles])
 
-        self.classToIdx = {clsName: i for i, clsName in enumerate(self.identities)}
+        self.classToIdx = {clsName: i for i, clsName in enumerate(self.identities)} # assigns a unique number to each name
 
         self.dataMap = {}
         
@@ -41,19 +41,19 @@ class MavCelebDataset(Dataset):
             # checking if both exist before adding
             if os.path.exists(facePath) and os.path.exists(voicePath):
                 # storing as lists 
-                self.dataMap[identity] = {"audios": [voicePath], "faces": [facePath]}
+                self.dataMap[identity] = {"audios": [voicePath], "faces": [facePath]} # pairing the face and voice together
 
-        self.validIds = list(self.dataMap.keys())
+        self.validIds = list(self.dataMap.keys()) # list of people who actually have both files
         print(f"Found {len(self.validIds)} valid identities with both audio and video")
 
         # setup spectrogram tool
-        self.mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=64)
+        self.mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=64) # tool to turn audio into a picture
         
         # setup face transform tool
         self.face_transform = transforms.Compose([
-            transforms.Resize((224,224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Resize((224,224)), # squash image to standard size for vgg
+            transforms.ToTensor(), # turn image into math numbers
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # standard color fix for pre-trained models
         ])
 
     def __len__(self):
@@ -61,46 +61,29 @@ class MavCelebDataset(Dataset):
 
     def __getitem__(self, idx):
         # pick random person
-        anchorId = random.choice(self.validIds)
-        label = self.classToIdx[anchorId]
+        anchorId = random.choice(self.validIds) # pick a random person from the valid list
+        label = self.classToIdx[anchorId] # get their number tag
 
         # picks the file 
         facePath = random.choice(self.dataMap[anchorId]["faces"])
         voicePath = random.choice(self.dataMap[anchorId]["audios"])
 
         faceImg = Image.open(facePath).convert("RGB") # opens and converts
-        faceTensor = self.face_transform(faceImg) # transforms face
+        faceTensor = self.face_transform(faceImg) # transforms face into ready-to-use numbers
 
         waveform, sr = torchaudio.load(voicePath) # load audio
         if sr != 16000: # resample if needed
-            resampler = torchaudio.transforms.Resample(sr, 16000)
+            resampler = torchaudio.transforms.Resample(sr, 16000) # standardizes the audio quality
             waveform = resampler(waveform)
 
-        targetLen = 16000 * 3
+        targetLen = 16000 * 3 # aim for exactly 3 seconds of audio
         
         if waveform.shape[1] < targetLen: # padding if too short
-            waveform = F.pad(waveform, (0, targetLen - waveform.shape[1]))
+            waveform = F.pad(waveform, (0, targetLen - waveform.shape[1])) # add silence to the end if it's too short
         else: 
-            waveform = waveform[:, :targetLen] # cropping if too long
+            waveform = waveform[:, :targetLen] # cropping if too long # cut it off at 3 seconds if it's too long
 
         specTensor = self.mel_transform(waveform) # create spectrogram
-        specTensor = specTensor.unsqueeze(0) # add channel dim
+        specTensor = specTensor.unsqueeze(0) # add channel dim # pretend it has a color channel so the math works
 
-        return faceTensor, specTensor, torch.tensor(label, dtype=torch.long)
-
-class EmbeddingDataset(Dataset):
-
-    def __init__(self, directory):
-        # Find all .pt files
-        self.files = glob.glob(os.path.join(directory, "*.pt"))
-        
-    def __len__(self):
-        return len(self.files)
-
-    def __getitem__(self, idx):
-        # Load the dictionary we saved earlier
-        data = torch.load(self.files[idx])
-        
-        # Return the vectors. 
-        # .squeeze(0) removes the extra dimension we added during extraction
-        return data['face_emb'].squeeze(0), data['voice_emb'].squeeze(0), data['label']
+        return faceTensor, specTensor, torch.tensor(label, dtype
