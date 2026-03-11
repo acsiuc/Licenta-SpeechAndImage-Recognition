@@ -1,18 +1,23 @@
 import torch
 from torch.utils.data import DataLoader
-from dataset import MavCelebDataset
+from dataset import EmbeddingDataset 
 from models import JointClassifier, ModalityTranslator
 from utils import paeff_fusion
 
 # 1. Setup
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-TEST_DIR = r"C:/Users/Axiuc/Downloads/mavceleb_embeddings" 
+TEST_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings" 
 NUM_CLASSES = 1200 
 
 def test_model():
     print("Loading test data and models...")
     
-    test_dataset = MavCelebDataset(TEST_DIR)
+    full_dataset = EmbeddingDataset(TEST_DIR)
+    train_size = int(0.8 * len(full_dataset))
+    test_size = len(full_dataset) - train_size
+    generator = torch.Generator().manual_seed(42)
+    _, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size], generator=generator)
+
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
     model = JointClassifier(num_classes=NUM_CLASSES).to(DEVICE)
@@ -30,9 +35,8 @@ def test_model():
 
     correct_predictions = 0
     total_samples = 0
-
-    print("Starting the exam...\n")
     
+    print("\nStarting the exam...")
     with torch.no_grad():
         for face_emb, voice_emb, labels in test_loader:
             face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE)
@@ -54,6 +58,7 @@ def test_model():
     print(f" Total People Tested: {total_samples}")
     print(f" Correct Guesses: {correct_predictions}")
     print(f" Accuracy: {accuracy:.2f}%")
+
 
 if __name__ == "__main__":
     test_model()
