@@ -20,9 +20,9 @@ def test_model():
 
     test_loader = DataLoader(train_dataset, batch_size=32, shuffle=False)
 
-    model = JointClassifier(num_classes=NUM_CLASSES).to(DEVICE)
-    face_translator = ModalityTranslator().to(DEVICE)
-    voice_translator = ModalityTranslator().to(DEVICE)
+    model = JointClassifier(num_classes=NUM_CLASSES, embedding_dim=512).to(DEVICE)
+    face_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
+    voice_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
 
     checkpoint = torch.load("final_model.pth", map_location=DEVICE)
     model.load_state_dict(checkpoint['classifier'])
