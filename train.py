@@ -7,7 +7,6 @@ from torch.utils.data import Dataset, DataLoader
 from models import JointClassifier, ModalityTranslator
 from utils import orthogonal_projection_loss, EarlyStopping, cross_modal_alignment_loss, paeff_fusion
 
-# Config
 EMBEDDING_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings"
 BATCH_SIZE = 32 
 EPOCHS = 80 
@@ -100,5 +99,10 @@ if __name__ == "__main__":
         if (epoch + 1) % 20 == 0:
             torch.save(model.state_dict(), f"checkpoint_epoch_{epoch+1}.pth")
 
-    torch.save(model.state_dict(), "final_model.pth")
+    checkpoint = {
+        'classifier': model.state_dict(),
+        'face_translator': face_translator.state_dict(),
+        'voice_translator': voice_translator.state_dict()
+    }
+    torch.save(checkpoint, "final_model.pth")
 

@@ -22,7 +22,6 @@ class EarlyStopping:
             self.counter = 0
 
 def orthogonal_projection_loss(embeddings, labels):
-    # (Copy your existing loss function here)
     simMatrix = torch.matmul(embeddings, embeddings.T)
     labels = labels.view(-1, 1)
     maskPos = torch.eq(labels, labels.T).float()
@@ -55,7 +54,7 @@ def paeff_fusion(face_emb, voice_emb):
 
     stacked_embs = torch.stack([face_emb, voice_emb], dim=-1)
     
-    # alculate Attention Weights (Softmax forces the 2 weights to equal 100%)
+    # alculate Attention Weights (softmax forces the 2 weights to equal 100%)
     #  finds which modality has the stronger/more confident feature
     attention_weights = F.softmax(stacked_embs, dim=-1)
     
