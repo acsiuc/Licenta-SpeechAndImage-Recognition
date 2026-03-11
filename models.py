@@ -34,21 +34,26 @@ class VoiceEncoder(nn.Module):
         return F.normalize(x, p=2, dim=1)
 
 class JointClassifier(nn.Module):
-    def __init__(self, num_classes, embedding_dim: int = 128):
+    def __init__(self, num_classes, embedding_dim: int = 512): # Expanded door
         super(JointClassifier, self).__init__()
-        self.classifier = nn.Linear(embedding_dim, num_classes)
+        # added a hidden layer to make it think deeper
+        self.classifier = nn.Sequential(
+            nn.Linear(embedding_dim, 1024), 
+            nn.ReLU(),
+            nn.Linear(1024, num_classes)
+        )
 
     def forward(self, x):
         return self.classifier(x)
 
 class ModalityTranslator(nn.Module):
-    def __init__(self, embedding_dim: int = 128):
+    def __init__(self, input_dim: int = 128, output_dim: int = 512):
         super(ModalityTranslator, self).__init__()
-        #this translates the vectors
+        # takes the 128D input and inflates it to 512D
         self.projector = nn.Sequential(
-            nn.Linear(embedding_dim, embedding_dim),
+            nn.Linear(input_dim, 512),
             nn.ReLU(),
-            nn.Linear(embedding_dim, embedding_dim)
+            nn.Linear(512, output_dim)
         )
     def forward(self,x):
         x = self.projector(x)
