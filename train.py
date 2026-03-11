@@ -80,7 +80,7 @@ if __name__ == "__main__":
               
                 
             
-            loss = class_loss + ortho_loss + (0.5 * align_loss)
+            loss = class_loss + (0.1*ortho_loss) + (0.1 * align_loss)
             
             loss.backward()
             optimizer.step()
