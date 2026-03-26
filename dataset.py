@@ -52,13 +52,13 @@ class MavCelebDataset(Dataset):
         # setup face transform tool
         self.face_transform = transforms.Compose([
             transforms.Resize((224,224)), # squash image to standard size for vgg
-            transforms.RandomHorizontalFlip(p=0.5) # random horizontal flip
+            transforms.RandomHorizontalFlip(p=0.5), # random horizontal flip
             transforms.ToTensor(), # turn image into math numbers
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # standard color fix for pre-trained models
         ])
 
     def __len__(self):
-        return len(self.validIds)  #*50 artificially extending dataset
+        return len(self.validIds)*10  # artificially extending dataset
 
     def __getitem__(self, idx):
         # pick random person
@@ -81,7 +81,10 @@ class MavCelebDataset(Dataset):
         
         if waveform.shape[1] < targetLen: # padding if too short
             waveform = F.pad(waveform, (0, targetLen - waveform.shape[1])) # add silence to the end if it's too short
-        else: 
+        else:
+            #grab a random 3-second window instead of the first 3 seconds
+            max_start = waveform.shape[1] - targetLen
+            start_idx = random.randint(0, max_start)
             waveform = waveform[:, :targetLen] # cropping if too long # cut it off at 3 seconds if it's too long
 
         specTensor = self.mel_transform(waveform) # create spectrogram
