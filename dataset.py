@@ -52,6 +52,7 @@ class MavCelebDataset(Dataset):
         # setup face transform tool
         self.face_transform = transforms.Compose([
             transforms.Resize((224,224)), # squash image to standard size for vgg
+            transforms.RandomHorizontalFlip(p=0.5) # random horizontal flip
             transforms.ToTensor(), # turn image into math numbers
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # standard color fix for pre-trained models
         ])
@@ -86,4 +87,4 @@ class MavCelebDataset(Dataset):
         specTensor = self.mel_transform(waveform) # create spectrogram
         specTensor = specTensor.unsqueeze(0) # add channel dim # pretend it has a color channel so the math works
 
-        return faceTensor, specTensor, torch.tensor(label, dtype
+        return faceTensor, specTensor, torch.tensor(label, dtype)
