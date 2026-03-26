@@ -90,4 +90,15 @@ class MavCelebDataset(Dataset):
         specTensor = self.mel_transform(waveform) # create spectrogram
         specTensor = specTensor.unsqueeze(0) # add channel dim # pretend it has a color channel so the math works
 
-        return faceTensor, specTensor, torch.tensor(label, dtype)
+        return faceTensor, specTensor, torch.tensor(label, dtype=torch.long) 
+
+class EmbeddingDataset(Dataset):
+    def __init__(self, directory):
+        self.files = glob.glob(os.path.join(directory, "*.pt"))
+        
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        data = torch.load(self.files[idx])
+        return data['face_emb'].squeeze(0), data['voice_emb'].squeeze(0), data['label']

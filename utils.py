@@ -23,7 +23,7 @@ class EarlyStopping:
             self.counter = 0 # reset the strikes
 
 def orthogonal_projection_loss(embeddings, labels):
-    # side quest 2: make sure different people are pushed far apart into their own math corners
+    #  make sure different people are pushed far apart into their own math corners
     simMatrix = torch.matmul(embeddings, embeddings.T) # measure the distance between everyone
     labels = labels.view(-1, 1)
     maskPos = torch.eq(labels, labels.T).float() # find the vectors that belong to the same person
@@ -33,7 +33,7 @@ def orthogonal_projection_loss(embeddings, labels):
     return posLoss + negLoss
     
 def cross_modal_alignment_loss(face_embeddings, voice_embeddings, labels, temperature = 0.1):
-    # side quest 1: this function will align our face and voice embeddings before fusion. pulls embeddings which are from same identity together and pushes diff ones apart
+    # this function will align our face and voice embeddings before fusion. pulls embeddings which are from same identity together and pushes diff ones apart
 
     # cosine similarity
     sim_matrix = torch.matmul(face_embeddings, voice_embeddings.T) / temperature # measure the math distance between every face and every voice

@@ -11,7 +11,7 @@ NUM_CLASSES = 1200 # total number of possible identities to guess
 def test_model():
     print("Loading test data and models...")
     
-    full_dataset = EmbeddingDataset(TEST_DIR) # load the pre-baked vectors
+    full_dataset = EmbeddingDataset(TEST_DIR) # load the pre-calculated vectors
     train_size = int(0.8 * len(full_dataset)) # calculate 80 percent for training pile
     test_size = len(full_dataset) - train_size # the remaining 20 percent for testing pile
     generator = torch.Generator().manual_seed(42) # use a seed to get the exact same split as train.py

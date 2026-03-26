@@ -19,7 +19,7 @@ class FaceEncoder(nn.Module):
         x = self.features(x) # pass image through vgg brain
         x = self.avgpool(x) # pool it down
         x = torch.flatten(x,1) # unroll the grid into a single flat line of numbers
-        x = self.projection(x) # squash it through the 128d doorway
+        x = self.projection(x) # squash it through the 128d 
         return F.normalize(x, p=2, dim=1) # normalizing so the math doesn't explode when we dot product
 
 
