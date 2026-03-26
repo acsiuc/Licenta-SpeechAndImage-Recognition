@@ -99,7 +99,7 @@ if __name__ == "__main__":
         if (epoch + 1) % 20 == 0: # save a backup every 20 epochs just in case
             torch.save(model.state_dict(), f"checkpoint_epoch_{epoch+1}.pth")
 
-    checkpoint = { # pack the suitcase
+    checkpoint = {
         'classifier': model.state_dict(), # pack classifier brain
         'face_translator': face_translator.state_dict(), # pack face translator brain
         'voice_translator': voice_translator.state_dict() # pack voice translator brain
