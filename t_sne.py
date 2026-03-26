@@ -1,3 +1,4 @@
+import torch.nn.functional as F
 import torch
 import matplotlib.pyplot as plt 
 import numpy as np 
@@ -5,6 +6,7 @@ from sklearn.manifold import TSNE
 from torch.utils.data import DataLoader
 from dataset import EmbeddingDataset 
 from models import ModalityTranslator
+
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TEST_DIR  =r"C:\Users\Axiuc\Downloads\mavceleb_embeddings"
@@ -18,7 +20,7 @@ def visualize_tsne():
     face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
 
-    checkpoint = torch.load("final_model_PAEFF_93%.pth", map_location=DEVICE)
+    checkpoint = torch.load("final_model_95%.pth", map_location=DEVICE)
     face_translator.load_state_dict(checkpoint['face_translator'])
     voice_translator.load_state_dict(checkpoint['voice_translator'])
 
@@ -37,6 +39,9 @@ def visualize_tsne():
             f_512 = face_translator(face_emb).cpu()
             v_512 = voice_translator(voice_emb).cpu()
 
+            f_512 = F.normalize(f_512, p=2, dim=1).cpu()
+            v_512 = F.normalize(v_512, p=2, dim=1).cpu()
+
             mask = labels.view(-1) < 12
             if mask.sum() == 0: continue
 
@@ -49,7 +54,7 @@ def visualize_tsne():
     all_vectors = torch.cat(face_vectors + voice_vectors, dim = 0).numpy()
 
     print(f'Running t-SNE on {all_vectors.shape[0]} embeddings')
-    tsne = TSNE(n_components = 2, perplexity = 30, max_iter = 1000, random_state = 42)
+    tsne = TSNE(n_components = 2, perplexity =10, max_iter = 1000, random_state = 42)
     embeddings_2d = tsne.fit_transform(all_vectors)
 
     half = len(embeddings_2d) // 2
@@ -75,7 +80,7 @@ def visualize_tsne():
         plt.plot([f_mean[0], v_mean[0]], [f_mean[1], v_mean[1]], color = color, linestyle ='--', alpha = 0.3)
 
     plt.title("t_SNE Visualization") 
-    plt.legend(loc = 'upper right', bboxp_to_anchor = (1.15, 1))
+    plt.legend(loc = 'upper right', bbox_to_anchor = (1.15, 1))
     plt.grid(True, linestyle=':', alpha = 0.6)
 
     plt.savefig("face_voice_tsne_png", bbox_inches = 'tight', dpi=300)
