@@ -80,7 +80,7 @@ if __name__ == "__main__":
               
                 
             
-            loss = class_loss + (0.1*ortho_loss) + (10.0 * align_loss) # master grading rubric - turned down side quests to 0.1 so it focuses on names
+            loss = class_loss + (0.1*ortho_loss) + (30.0 * align_loss) # master grading rubric - turned down side quests to 0.1 so it focuses on names
             
             loss.backward() # send the penalties backwards through the network
             optimizer.step() # actually update the weights/brains

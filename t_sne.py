@@ -20,7 +20,7 @@ def visualize_tsne():
     face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
 
-    checkpoint = torch.load("final_model_95%.pth", map_location=DEVICE)
+    checkpoint = torch.load("final_model_alignment=10.pth", map_location=DEVICE)
     face_translator.load_state_dict(checkpoint['face_translator'])
     voice_translator.load_state_dict(checkpoint['voice_translator'])
 
@@ -51,10 +51,25 @@ def visualize_tsne():
 
             if len(labels_list) > 300: break
 
-    all_vectors = torch.cat(face_vectors + voice_vectors, dim = 0).numpy()
+    all_f = torch.cat(face_vectors, dim=0)
+    all_v = torch.cat(voice_vectors, dim=0)
 
-    print(f'Running t-SNE on {all_vectors.shape[0]} embeddings')
-    tsne = TSNE(n_components = 2, perplexity =10, max_iter = 1000, random_state = 42)
+    all_vectors_tensor = torch.cat([all_f, all_v], dim=0)
+    all_vectors_tensor = all_vectors_tensor - all_vectors_tensor.mean(dim = 0, keepdim= True)
+    all_vectors_tensor = F.normalize(all_vectors_tensor, p=2, dim=1)
+    all_vectors = all_vectors_tensor.numpy()
+    
+
+    tsne = TSNE(
+        n_components=2, 
+        perplexity=50,       
+        metric='cosine',     
+        init='pca',          
+        learning_rate='auto', 
+        max_iter=2500,       
+        random_state=42
+    )
+    
     embeddings_2d = tsne.fit_transform(all_vectors)
 
     half = len(embeddings_2d) // 2
