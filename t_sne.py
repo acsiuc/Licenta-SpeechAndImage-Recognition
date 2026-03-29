@@ -20,6 +20,7 @@ def visualize_tsne():
     face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
 
+    # using the fixed model where the translators actually learned something
     checkpoint = torch.load("final_model_modality_translators_fixed.pth", map_location=DEVICE)
     face_translator.load_state_dict(checkpoint['face_translator'])
     voice_translator.load_state_dict(checkpoint['voice_translator'])
@@ -39,6 +40,7 @@ def visualize_tsne():
             f_512 = face_translator(face_emb).cpu()
             v_512 = voice_translator(voice_emb).cpu()
 
+            # normalize so the math doesn't explode and they live on the same scale
             f_512 = F.normalize(f_512, p=2, dim=1).cpu()
             v_512 = F.normalize(v_512, p=2, dim=1).cpu()
 
@@ -55,14 +57,16 @@ def visualize_tsne():
     all_v = torch.cat(voice_vectors, dim=0)
 
     all_vectors_tensor = torch.cat([all_f, all_v], dim=0)
+    # the magic trick: subtract the mean so the face and voice clouds overlap
     all_vectors_tensor = all_vectors_tensor - all_vectors_tensor.mean(dim = 0, keepdim= True)
     all_vectors_tensor = F.normalize(all_vectors_tensor, p=2, dim=1)
     all_vectors = all_vectors_tensor.numpy()
     
 
+    # using cosine metric because that's how we trained it with the alignment loss
     tsne = TSNE(
         n_components=2, 
-        perplexity=50,
+        perplexity=25,
         early_exaggeration = 24.0,       
         metric='cosine',     
         init='pca',          
@@ -91,6 +95,7 @@ def visualize_tsne():
         plt.scatter(face_2d[idx,0], face_2d[idx, 1], color=color, marker ='o', label = f'ID{label} (Face)' if i<5 else "", alpha = 0.8, edgecolors ='k')
         plt.scatter(voice_2d[idx,0], voice_2d[idx,1], color = color, marker = '^', label = f'ID{label} (Voice) ' if i<5 else "", alpha = 0.8)
 
+        # draw the dotted lines to see how big the modality gap is
         f_mean = face_2d[idx].mean(axis=0)
         v_mean = voice_2d[idx].mean(axis=0)
         plt.plot([f_mean[0], v_mean[0]], [f_mean[1], v_mean[1]], color = color, linestyle ='--', alpha = 0.3)
