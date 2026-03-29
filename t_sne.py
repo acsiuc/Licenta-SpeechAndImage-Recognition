@@ -82,30 +82,30 @@ def visualize_tsne():
     voice_2d = embeddings_2d[half:]
     plot_labels = labels_list
 
-    print('Generating Plot...')
-    plt.figure(figsize = (12,10))
+    plt.figure(figsize = (14,10)) 
 
     unique_labels = np.unique(plot_labels)
-    colors = plt.cm.get_cmap('tab20', len(unique_labels))
+    # rainbow spectrum instead of paired colors so they are all completely different
+    cmap = plt.cm.get_cmap('nipy_spectral') 
 
     for i, label in enumerate(unique_labels):
         idx = np.where(np.array(plot_labels) == label)[0]
-        color = colors(i)
+        
+        color = cmap(i / len(unique_labels))
 
-        plt.scatter(face_2d[idx,0], face_2d[idx, 1], color=color, marker ='o', label = f'ID{label} (Face)' if i<5 else "", alpha = 0.8, edgecolors ='k')
-        plt.scatter(voice_2d[idx,0], voice_2d[idx,1], color = color, marker = '^', label = f'ID{label} (Voice) ' if i<5 else "", alpha = 0.8)
+        plt.scatter(face_2d[idx,0], face_2d[idx, 1], color=color, marker ='o', label = f'ID{label} (Face)', alpha = 0.8, edgecolors ='k')
+        plt.scatter(voice_2d[idx,0], voice_2d[idx,1], color=color, marker = '^', label = f'ID{label} (Voice)', alpha = 0.8)
 
-        # draw the dotted lines to see how big the modality gap is
         f_mean = face_2d[idx].mean(axis=0)
         v_mean = voice_2d[idx].mean(axis=0)
-        plt.plot([f_mean[0], v_mean[0]], [f_mean[1], v_mean[1]], color = color, linestyle ='--', alpha = 0.3)
+        plt.plot([f_mean[0], v_mean[0]], [f_mean[1], v_mean[1]], color=color, linestyle ='--', alpha = 0.3)
 
     plt.title("t_SNE Visualization") 
-    plt.legend(loc = 'upper right', bbox_to_anchor = (1.15, 1))
+    plt.legend(loc = 'upper right', bbox_to_anchor = (1.20, 1), ncol=1)
     plt.grid(True, linestyle=':', alpha = 0.6)
 
-    plt.savefig("face_voice_tsne_png", bbox_inches = 'tight', dpi=300)
-    plt.show()  
+    plt.savefig("face_voice_tsne.png", bbox_inches = 'tight', dpi=300)
+    plt.show()
 
 if __name__ == "__main__":
     visualize_tsne()
