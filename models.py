@@ -11,13 +11,13 @@ class FaceEncoder(nn.Module):
         super(FaceEncoder, self).__init__()
         vgg= vgg16(pretrained = True) # grab a vgg16 brain that already knows how to see shapes
         self.features = vgg.features # takes feature extraction from vgg
-        self.avgpool = vgg.avgpool # avg pooling layer to shrink the grid
+        self.avgpool = vgg.avgpool 
         
         self.projection = nn.Linear(512 * 7 * 7, embedding_dim) # squashes the giant vgg output down into our 128-number vector
 
     def forward(self, x):
         x = self.features(x) # pass image through vgg brain
-        x = self.avgpool(x) # pool it down
+        x = self.avgpool(x) 
         x = torch.flatten(x,1) # unroll the grid into a single flat line of numbers
         x = self.projection(x) # squash it through the 128d 
         return F.normalize(x, p=2, dim=1) # normalizing so the math doesn't explode when we dot product
