@@ -20,7 +20,7 @@ def visualize_tsne():
     face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
 
-    checkpoint = torch.load("final_model_alignment=10.pth", map_location=DEVICE)
+    checkpoint = torch.load("final_model_modality_translators_fixed.pth", map_location=DEVICE)
     face_translator.load_state_dict(checkpoint['face_translator'])
     voice_translator.load_state_dict(checkpoint['voice_translator'])
 
@@ -62,7 +62,8 @@ def visualize_tsne():
 
     tsne = TSNE(
         n_components=2, 
-        perplexity=50,       
+        perplexity=50,
+        early_exaggeration = 24.0,       
         metric='cosine',     
         init='pca',          
         learning_rate='auto', 

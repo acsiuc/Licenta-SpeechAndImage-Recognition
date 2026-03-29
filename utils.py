@@ -32,7 +32,7 @@ def orthogonal_projection_loss(embeddings, labels):
     negLoss = torch.sum(maskNeg * torch.abs(simMatrix)) / (maskNeg.sum() + 1e-6) # penalty if different people are intruding on each other's space
     return posLoss + negLoss
     
-def cross_modal_alignment_loss(face_embeddings, voice_embeddings, labels, temperature = 0.05):
+def cross_modal_alignment_loss(face_embeddings, voice_embeddings, labels, temperature = 0.1):
     # this function will align our face and voice embeddings before fusion. pulls embeddings which are from same identity together and pushes diff ones apart
 
     # cosine similarity

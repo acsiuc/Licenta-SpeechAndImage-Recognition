@@ -23,7 +23,7 @@ def test_model():
     face_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) # spawn the upgraded 512d 
     voice_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) # spawn the upgraded 512d 
 
-    checkpoint = torch.load("final_model_alignment=10.pth", map_location=DEVICE) # open the suitcase with all our saved brains
+    checkpoint = torch.load("final_model_modality_translators_fixed.pth", map_location=DEVICE) # open the suitcase with all our saved brains
     model.load_state_dict(checkpoint['classifier']) # upload the classifier memories
     face_translator.load_state_dict(checkpoint['face_translator']) # upload the face translator memories
     voice_translator.load_state_dict(checkpoint['voice_translator']) # upload the voice translator memories
