@@ -17,13 +17,13 @@ def test_model():
     generator = torch.Generator().manual_seed(42) # use a seed to get the exact same split as train.py
     train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size], generator=generator)
 
-    test_loader = DataLoader(train_dataset, batch_size=32, shuffle=False) # loading the training pile for our open-book test
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False) # loading the training pile for our open-book test
 
     model = JointClassifier(num_classes=NUM_CLASSES, embedding_dim=512).to(DEVICE)
     face_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
     voice_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
 
-    checkpoint = torch.load("final_model_900IDS.pth", map_location=DEVICE) 
+    checkpoint = torch.load("final_model_face_translator.pth", map_location=DEVICE) 
     model.load_state_dict(checkpoint['classifier']) # upload the classifier 
     face_translator.load_state_dict(checkpoint['face_translator']) # upload the face translator 
     voice_translator.load_state_dict(checkpoint['voice_translator']) # upload the voice translator 
@@ -38,6 +38,13 @@ def test_model():
     with torch.no_grad(): # turn off math to go fast and save memory
         for face_emb, voice_emb, labels in test_loader:
             face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE) 
+
+            test_mask = labels.view(-1) < 900
+            if test_mask.sum() == 0: continue
+
+            face_emb = face_emb[test_mask]
+            voice_emb = voice_emb[test_mask]
+            labels = labels[test_mask]
             
             face_emb = face_translator(face_emb) # translate face into 512d space
             voice_emb = voice_translator(voice_emb) # translate voice into 512d space
