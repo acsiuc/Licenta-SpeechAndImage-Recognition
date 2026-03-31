@@ -16,7 +16,13 @@ def visualize_umap():
     print("Loading Data...")
 
     dataset = EmbeddingDataset(TEST_DIR)
-    loader = DataLoader(dataset, batch_size = 256, shuffle = True)
+
+    train_size = int(0.8 * len(dataset))   
+    test_size = len(dataset) - train_size
+    generator = torch.Generator().manual_seed(42)
+    _, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size], generator=generator)
+
+    loader = DataLoader(test_dataset, batch_size = 256, shuffle = True)
 
     face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
