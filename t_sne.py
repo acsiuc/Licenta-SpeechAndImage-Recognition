@@ -21,7 +21,7 @@ def visualize_tsne():
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
 
     # using the fixed model where the translators actually learned something
-    checkpoint = torch.load("final_model_900IDS.pth", map_location=DEVICE)
+    checkpoint = torch.load("final_model_attention_and_dropout.pth", map_location=DEVICE)
     face_translator.load_state_dict(checkpoint['face_translator'])
     voice_translator.load_state_dict(checkpoint['voice_translator'])
 

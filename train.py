@@ -64,7 +64,7 @@ if __name__ == "__main__":
             
             
             # translate the frozen vectors into aligned vectors 
-            face_emb = voice_translator(face_emb)
+            face_emb = face_translator(face_emb)
             voice_emb = voice_translator(voice_emb) 
             
             #calculate Alignment Loss
