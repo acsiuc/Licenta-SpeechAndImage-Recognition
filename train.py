@@ -54,9 +54,17 @@ if __name__ == "__main__":
         
         for face_emb, voice_emb, labels in train_loader:
             face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE)
+
+            train__mask = labels.view(-1) < 900
+            if train_mask.sum()==0: continue
+
+            face_emb = face_emb[train_mask]
+            voice_emb = voice_emb[train_mask]
+            labels = labels[train_mask]
+            
             
             # translate the frozen vectors into aligned vectors 
-            face_emb = face_translator(face_emb)
+            face_emb = voice_translator(face_emb)
             voice_emb = voice_translator(voice_emb) 
             
             #calculate Alignment Loss
