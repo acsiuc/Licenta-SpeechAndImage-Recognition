@@ -50,15 +50,29 @@ class JointClassifier(nn.Module):
         return self.classifier(x) # make the final guess
 
 class ModalityTranslator(nn.Module):
-    # the detective that aligns and upgrades our features
-    def __init__(self, input_dim: int = 128, output_dim: int = 512):
+    def __init__(self, input_dim: int = 128, output_dim: int = 512, dropout: float = 0.3):
         super(ModalityTranslator, self).__init__()
-        # takes the frozen 128d input and inflates it into a massive 512d space
-        self.projector = nn.Sequential(
-            nn.Linear(input_dim, 512), 
-            nn.ReLU(), # non-linear math to help it untangle tricky identities
-            nn.Linear(512, output_dim) 
+        
+        self.expand = nn.Linear(input_dim, output_dim)
+        
+        self.attention = nn.Sequential(
+            nn.Linear(output_dim, output_dim // 2),
+            nn.Tanh(),
+            nn.Linear(output_dim // 2, output_dim),
+            nn.Sigmoid()
         )
-    def forward(self,x):
-        x = self.projector(x) # push the vector through the upgrade path
-        return F.normalize(x, p=2, dim=1) # normalize the new 512d vector so it plays nice with others
+        
+        self.projector = nn.Sequential(
+            nn.Linear(output_dim, output_dim),
+            nn.BatchNorm1d(output_dim),
+            nn.LeakyReLU(0.2),
+            nn.Dropout(dropout),
+            nn.Linear(output_dim, output_dim)
+        )
+
+    def forward(self, x):
+        expanded = self.expand(x)
+        attn_weights = self.attention(expanded)
+        focused_x = expanded * attn_weights
+        out = self.projector(focused_x)
+        return F.normalize(out, p=2, dim=1)
