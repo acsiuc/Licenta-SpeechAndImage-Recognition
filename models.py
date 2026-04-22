@@ -53,26 +53,43 @@ class ModalityTranslator(nn.Module):
     def __init__(self, input_dim: int = 128, output_dim: int = 512, dropout: float = 0.3):
         super(ModalityTranslator, self).__init__()
         
-        self.expand = nn.Linear(input_dim, output_dim)
-        
-        self.attention = nn.Sequential(
-            nn.Linear(output_dim, output_dim // 2),
-            nn.Tanh(),
-            nn.Linear(output_dim // 2, output_dim),
-            nn.Sigmoid()
-        )
-        
+        # removed the old Tanh/Sigmoid attention here.
+        # a deep, stable projector to get the 128d vectors up to 512d.
         self.projector = nn.Sequential(
-            nn.Linear(output_dim, output_dim),
+            nn.Linear(input_dim, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, output_dim),
             nn.BatchNorm1d(output_dim),
             nn.LeakyReLU(0.2),
-            nn.Dropout(dropout),
-            nn.Linear(output_dim, output_dim)
         )
 
     def forward(self, x):
-        expanded = self.expand(x)
-        attn_weights = self.attention(expanded)
-        focused_x = expanded * attn_weights
-        out = self.projector(focused_x)
+        out = self.projector(x)
         return F.normalize(out, p=2, dim=1)
+
+class TransformerCrossAttention(nn.Module):
+    # mplement the Q, K, V math from "The Illustrated Transformer"
+    def __init__(self, embed_dim: int = 512, num_heads: int = 8, dropout: float = 0.3):
+        super(TransformerCrossAttention, self).__init__()
+        
+        # PyTorch's built-in Multihead Attention 
+        self.multihead_attn = nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, dropout=dropout, batch_first=True)
+        self.layer_norm = nn.LayerNorm(embed_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, face_emb, voice_emb):
+        #  modalities into a sequence of length 2: [Face, Voice]
+        # Shape becomes: (Batch_Size, 2_tokens, 512_dimensions)
+        seq = torch.stack([face_emb, voice_emb], dim=1) 
+        
+        # Face and Voice act as Queries, Keys, and Values for each other
+        attn_output, attn_weights = self.multihead_attn(query=seq, key=seq, value=seq)
+        
+        # add & normalize 
+        seq_out = self.layer_norm(seq + self.dropout(attn_output))
+        
+        # average the two attention-boosted vectors together to get the final fused vector
+        fused_emb = torch.mean(seq_out, dim=1)
+        return F.normalize(fused_emb, p=2, dim=1)
