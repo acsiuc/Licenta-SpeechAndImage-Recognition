@@ -4,7 +4,7 @@ import torch.nn as nn
 import glob
 import os
 from torch.utils.data import Dataset, DataLoader
-from models import JointClassifier, ModalityTranslator
+from models import JointClassifier, ModalityTranslator, TransformerCrossAttention
 from utils import orthogonal_projection_loss, EarlyStopping, cross_modal_alignment_loss, paeff_fusion
 
 EMBEDDING_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings" # path to our pre-baked 128d vectors
@@ -41,8 +41,10 @@ if __name__ == "__main__":
     model = JointClassifier(num_classes=1200,embedding_dim=512).to(DEVICE) 
     face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE) 
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE) 
+
+    transformer_fusion = TransformerCrossAttention(embed_dim=512).to(DEVICE)
     
-    params_to_train = list(model.parameters()) + list(face_translator.parameters()) + list(voice_translator.parameters()) # group all the brains together
+    params_to_train = list(model.parameters()) + list(face_translator.parameters()) + list(voice_translator.parameters()) + list(transformer_fusion.parameters()) # group all the brains together
     optimizer = optim.Adam(params_to_train, lr=0.001) 
     criterion = nn.CrossEntropyLoss() # the math that calculates if we guessed the name right
     early_stopper = EarlyStopping(patience=15)
@@ -50,6 +52,7 @@ if __name__ == "__main__":
         model.train() # turn on learning mode for classifier
         face_translator.train() 
         voice_translator.train() 
+        transformer_fusion.train()
         total_loss = 0
         
         for face_emb, voice_emb, labels in train_loader:
@@ -70,7 +73,7 @@ if __name__ == "__main__":
             #calculate Alignment Loss
             align_loss = cross_modal_alignment_loss(face_emb, voice_emb, labels) # penalty if face and voice point in diff directions
             
-            fused_emb = paeff_fusion(face_emb,voice_emb) 
+            fused_emb = transformer_fusion(face_emb, voice_emb)
             fused_emb = torch.nn.functional.normalize(fused_emb, p=2, dim=1) # normalize 
             
             optimizer.zero_grad() # wipe the memory from the last batch
@@ -109,6 +112,7 @@ if __name__ == "__main__":
     checkpoint = {
         'classifier': model.state_dict(), 
         'face_translator': face_translator.state_dict(), 
-        'voice_translator': voice_translator.state_dict() 
+        'voice_translator': voice_translator.state_dict(),
+        'transformer_fusion': transformer_fusion.state_dict() # <-- SAVE THIS
     }
     torch.save(checkpoint, "final_model.pth")
