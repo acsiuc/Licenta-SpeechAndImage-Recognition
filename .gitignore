@@ -1,5 +1,10 @@
-__pycache__/
+temp/
+build_youtube_corpus/
+mavceleb_v1_test/
 *.pt
 *.pth
-mavceleb_v1_test/
+youtube_embeddings/
 mavceleb_embeddings/
+__pycache__/
+*.pyc
+*.png

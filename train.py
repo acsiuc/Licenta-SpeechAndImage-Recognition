@@ -113,6 +113,6 @@ if __name__ == "__main__":
         'classifier': model.state_dict(), 
         'face_translator': face_translator.state_dict(), 
         'voice_translator': voice_translator.state_dict(),
-        'transformer_fusion': transformer_fusion.state_dict() # <-- SAVE THIS
+        'transformer_fusion': transformer_fusion.state_dict() 
     }
-    torch.save(checkpoint, "final_model.pth")
+    torch.save(checkpoint, "model_cu_transformer.pth")

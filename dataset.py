@@ -34,14 +34,13 @@ class MavCelebDataset(Dataset):
         print(f"Scanning {len(self.identities)} identities...")
         
         for identity in self.identities:
-            # constructing paths for face and voice directly
-            facePath = os.path.join(self.faceRoot, identity + ".jpg")
-            voicePath = os.path.join(self.voiceRoot, identity + ".wav")
-
-            # checking if both exist before adding
-            if os.path.exists(facePath) and os.path.exists(voicePath):
-                # storing as lists 
-                self.dataMap[identity] = {"audios": [voicePath], "faces": [facePath]} # pairing the face and voice together
+            # glob to find ALL images that start with the identity's name
+            facePaths = glob.glob(os.path.join(self.faceRoot, f"{identity}_*.jpg"))
+            voicePath = os.path.join(self.voiceRoot, f"{identity}.wav")
+            
+            #add them if we found at least one face and the voice file
+            if len(facePaths) > 0 and os.path.exists(voicePath):
+                self.dataMap[identity] = {"audios": [voicePath], "faces": facePaths}
 
         self.validIds = list(self.dataMap.keys()) # list of people who actually have both files
         print(f"Found {len(self.validIds)} valid identities with both audio and video")

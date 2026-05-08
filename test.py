@@ -24,7 +24,7 @@ def test_model():
     voice_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
     transformer_fusion = TransformerCrossAttention(embed_dim=512).to(DEVICE)
 
-    checkpoint = torch.load("final_model_face_translator.pth", map_location=DEVICE) 
+    checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE) 
     model.load_state_dict(checkpoint['classifier']) # upload the classifier 
     face_translator.load_state_dict(checkpoint['face_translator']) # upload the face translator 
     voice_translator.load_state_dict(checkpoint['voice_translator']) # upload the voice translator 
