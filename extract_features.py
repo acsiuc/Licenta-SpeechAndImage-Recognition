@@ -27,24 +27,25 @@ def extract():
 
     print(f"Starting extraction for {len(dataset)} samples...")
 
-    with torch.no_grad(): # turn off math tracking 
+    with torch.no_grad():
         for i, (face_img, voice_spec, label) in enumerate(loader):
-            face_img, voice_spec = face_img.to(DEVICE), voice_spec.to(DEVICE) 
+            face_img, voice_spec = face_img.to(DEVICE), voice_spec.to(DEVICE)
 
-            #mbeddings 
-            face_emb = face_net(face_img) # squashes image into 128 numbers
-            voice_emb = voice_net(voice_spec.squeeze(1)) # squashes spectrogram into 128 numbers
+            face_emb  = face_net(face_img)
+            voice_emb = voice_net(voice_spec.squeeze(1))
 
-            # data_ID.pt
-            save_path = os.path.join(OUTPUT_DIR, f"sample_{i}.pt")
-            torch.save({
-                'face_emb': face_emb.cpu(), # pull face vector back to cpu to save
-                'voice_emb': voice_emb.cpu(), # pull voice vector back to cpu
-                'label': label.cpu() # pull the id label back
-            }, save_path)
+            # Save each sample in the batch as its own .pt file
+            for b in range(face_emb.shape[0]):
+                sample_idx = i * loader.batch_size + b
+                save_path = os.path.join(OUTPUT_DIR, f"sample_{sample_idx}.pt")
+                torch.save({
+                    'face_emb':  face_emb[b].unsqueeze(0).cpu(),
+                    'voice_emb': voice_emb[b].unsqueeze(0).cpu(),
+                    'label':     label[b].cpu()
+                }, save_path)
 
             if i % 100 == 0:
-                print(f"Processed {i} samples...")
+                print(f"Processed batch {i} ({i * loader.batch_size} samples)...")
 
 if __name__ == "__main__":
     extract()
