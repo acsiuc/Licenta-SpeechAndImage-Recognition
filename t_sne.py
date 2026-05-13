@@ -1,6 +1,7 @@
 import torch.nn.functional as F
 import torch
-import matplotlib.pyplot as plt 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np 
 from sklearn.manifold import TSNE 
 from torch.utils.data import DataLoader
@@ -27,7 +28,7 @@ def visualize_tsne():
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE)
 
     # using the fixed model where the translators actually learned something
-    checkpoint = torch.load("final_model_face_translator.pth", map_location=DEVICE)
+    checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE, weights_only=False)
     face_translator.load_state_dict(checkpoint['face_translator'])
     voice_translator.load_state_dict(checkpoint['voice_translator'])
 
@@ -93,7 +94,7 @@ def visualize_tsne():
 
     unique_labels = np.unique(plot_labels)
     # rainbow spectrum instead of paired colors so they are all completely different
-    cmap = plt.cm.get_cmap('nipy_spectral') 
+    cmap = matplotlib.colormaps['nipy_spectral']
 
     for i, label in enumerate(unique_labels):
         idx = np.where(np.array(plot_labels) == label)[0]
