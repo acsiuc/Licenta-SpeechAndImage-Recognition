@@ -36,8 +36,9 @@ class MavCelebDataset(Dataset):
         
         print(f"Found {len(self.validIds)} valid identities with both audio and video")
 
-        # setup spectrogram tool
-        self.mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=64) 
+        # setup spectrogram tool — log-scale (dB) is standard: raw mel power has huge dynamic range
+        self.mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=64)
+        self.amplitude_to_db = torchaudio.transforms.AmplitudeToDB(top_db=80)
         
         # setup face transform tool
         self.face_transform = transforms.Compose([
@@ -82,8 +83,9 @@ class MavCelebDataset(Dataset):
             start_idx = random.randint(0, max_start)
             waveform = waveform[:, start_idx: start_idx + targetLen] # cropping if too long # cut it off at 3 seconds if it's too long
 
-        specTensor = self.mel_transform(waveform) # create spectrogram
-        specTensor = specTensor.unsqueeze(0) # add channel dim # pretend it has a color channel so the math works
+        specTensor = self.mel_transform(waveform)       # create mel spectrogram (linear power scale)
+        specTensor = self.amplitude_to_db(specTensor)  # convert to dB (log scale) — tighter dynamic range, better gradients
+        specTensor = specTensor.unsqueeze(0)            # add channel dim: [1, 1, n_mels, time]
 
         return faceTensor, specTensor, torch.tensor(label, dtype=torch.long) 
 
