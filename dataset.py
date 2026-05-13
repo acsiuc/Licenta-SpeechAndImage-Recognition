@@ -97,5 +97,5 @@ class EmbeddingDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
-        data = torch.load(self.files[idx])
+        data = torch.load(self.files[idx], weights_only=False)
         return data['face_emb'].squeeze(0), data['voice_emb'].squeeze(0), data['label']
