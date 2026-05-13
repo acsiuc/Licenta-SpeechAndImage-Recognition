@@ -1,8 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
-from dataset import EmbeddingDataset 
+from dataset import EmbeddingDataset
 from models import JointClassifier, ModalityTranslator, TransformerCrossAttention
-from utils import paeff_fusion
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 TEST_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings" # path to .pt vectors
@@ -24,7 +23,7 @@ def test_model():
     voice_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
     transformer_fusion = TransformerCrossAttention(embed_dim=512).to(DEVICE)
 
-    checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE) 
+    checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE, weights_only=False)
     model.load_state_dict(checkpoint['classifier']) # upload the classifier 
     face_translator.load_state_dict(checkpoint['face_translator']) # upload the face translator 
     voice_translator.load_state_dict(checkpoint['voice_translator']) # upload the voice translator 
@@ -38,19 +37,12 @@ def test_model():
     correct_predictions = 0
     total_samples = 0
     
-    with torch.no_grad(): # turn off math to go fast and save memory
+    with torch.no_grad():
         for face_emb, voice_emb, labels in test_loader:
-            face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE) 
+            face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE)
 
-            test_mask = labels.view(-1) < 900
-            if test_mask.sum() == 0: continue
-
-            face_emb = face_emb[test_mask]
-            voice_emb = voice_emb[test_mask]
-            labels = labels[test_mask]
-            
-            face_emb = face_translator(face_emb) # translate face into 512d space
-            voice_emb = voice_translator(voice_emb) # translate voice into 512d space
+            face_emb = face_translator(face_emb)
+            voice_emb = voice_translator(voice_emb)
             
             fused_emb = transformer_fusion(face_emb, voice_emb) # use the transformer to  fuse the embeddings
             fused_emb = torch.nn.functional.normalize(fused_emb, p=2, dim=1) # normalize the fused vector so the math works
