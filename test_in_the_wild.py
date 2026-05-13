@@ -17,7 +17,7 @@ def test_unseen_biometrics():
     voice_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
 
     print("Loading Biometric Translators...")
-    checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE) 
+    checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE, weights_only=False)
     face_translator.load_state_dict(checkpoint['face_translator']) 
     voice_translator.load_state_dict(checkpoint['voice_translator']) 
 
