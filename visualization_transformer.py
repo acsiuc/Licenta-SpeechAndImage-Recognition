@@ -1,7 +1,8 @@
 import umap
 import torch
 import torch.nn.functional as F
-import matplotlib.pyplot as plt 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np 
 from sklearn.manifold import TSNE 
 from torch.utils.data import DataLoader
@@ -74,7 +75,7 @@ def generate_transformer_visuals(mode='umap'):
 
     plt.figure(figsize=(12, 8))
     unique_labels = np.unique(labels_list)
-    cmap = plt.cm.get_cmap('nipy_spectral')
+    cmap = matplotlib.colormaps['nipy_spectral']
 
     for i, label in enumerate(unique_labels):
         idx = np.where(np.array(labels_list) == label)[0]
