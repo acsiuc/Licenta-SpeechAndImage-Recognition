@@ -19,8 +19,8 @@ def extract():
     voice_net.eval() 
 
     
-    dataset = MavCelebDataset(DATA_DIR) # load the heavy dataset
-    loader = DataLoader(dataset, batch_size=1, shuffle=False) # load one person at a time
+    dataset = MavCelebDataset(DATA_DIR)
+    loader = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR) 
