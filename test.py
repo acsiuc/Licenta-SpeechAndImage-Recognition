@@ -6,7 +6,7 @@ from utils import paeff_fusion
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 TEST_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings" # path to .pt vectors
-NUM_CLASSES = 1200 # total number of possible identities to guess
+NUM_CLASSES = 64 # total number of possible identities to guess
 
 def test_model():
     print("Loading test data and models...")

@@ -13,55 +13,47 @@ class MavCelebDataset(Dataset):
     def __init__(self, rootDir):
         self.rootDir = rootDir
         
-        # setting up paths
-        self.faceRoot = os.path.join(rootDir, "faces", "English") # path to the raw faces
-        self.voiceRoot = os.path.join(rootDir, "voices", "English") # path to the raw voices
+        self.faceRoot = os.path.join(rootDir, "faces") 
+        self.voiceRoot = os.path.join(rootDir, "voices") 
 
-        # check if main folders exist
         if not os.path.exists(self.faceRoot) or not os.path.exists(self.voiceRoot):
-            raise RuntimeError(f"Error: Could not find 'faces/English' or 'voices/English' inside {rootDir}")
+            raise RuntimeError(f"Error: Could not find 'faces' or 'voices' inside {rootDir}")
 
-        # scanning for jpg files directly
-        faceFiles = glob.glob(os.path.join(self.faceRoot, "*.jpg"))
-        
-        # to get just the ID 
-        self.identities = sorted([os.path.splitext(os.path.basename(f))[0] for f in faceFiles])
-
-        self.classToIdx = {clsName: i for i, clsName in enumerate(self.identities)} # assigns a unique number to each name
+        self.identities = sorted([d for d in os.listdir(self.faceRoot) if d.startswith('id')])
 
         self.dataMap = {}
-        
-        print(f"Scanning {len(self.identities)} identities...")
+        print(f"Scanning {len(self.identities)} identity folders...")
         
         for identity in self.identities:
-            # glob to find ALL images that start with the identity's name
-            facePaths = glob.glob(os.path.join(self.faceRoot, f"{identity}_*.jpg"))
-            voicePath = os.path.join(self.voiceRoot, f"{identity}.wav")
+            facePaths = glob.glob(os.path.join(self.faceRoot, identity, "**", "*.jpg"), recursive=True)
+            voicePaths = glob.glob(os.path.join(self.voiceRoot, identity, "**", "*.wav"), recursive=True)
             
-            #add them if we found at least one face and the voice file
-            if len(facePaths) > 0 and os.path.exists(voicePath):
-                self.dataMap[identity] = {"audios": [voicePath], "faces": facePaths}
+            if len(facePaths) > 0 and len(voicePaths) > 0:
+                self.dataMap[identity] = {"audios": voicePaths, "faces": facePaths}
 
-        self.validIds = list(self.dataMap.keys()) # list of people who actually have both files
+        self.validIds = list(self.dataMap.keys())
+        self.classToIdx = {identity: i for i, identity in enumerate(self.validIds)}
+        
         print(f"Found {len(self.validIds)} valid identities with both audio and video")
 
         # setup spectrogram tool
-        self.mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=64) # tool to turn audio into a picture
+        self.mel_transform = torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=64) 
         
         # setup face transform tool
         self.face_transform = transforms.Compose([
-            transforms.Resize((224,224)), # squash image to standard size for vgg
-            transforms.RandomHorizontalFlip(p=0.5), # random horizontal flip
-            transforms.ToTensor(), # turn image into math numbers
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # standard color fix for pre-trained models
+            transforms.Resize((224,224)), 
+            transforms.RandomHorizontalFlip(p=0.5), 
+            transforms.RandomRotation(15), # NEW: Randomly tilt the head up to 15 degrees
+            transforms.ColorJitter(brightness=0.2, contrast=0.2), # NEW: Randomly change lighting and shadows
+            transforms.ToTensor(), 
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
         ])
 
     def __len__(self):
-        return len(self.validIds)*10  # artificially extending dataset
+        return len(self.validIds)*500  # artificially extending dataset
 
     def __getitem__(self, idx):
-        # pick random person
-        anchorId = random.choice(self.validIds) # pick a random person from the valid list
+        anchorId = self.validIds[idx % len(self.validIds)]
         label = self.classToIdx[anchorId] # get their number tag
 
         # picks the file 
@@ -72,6 +64,10 @@ class MavCelebDataset(Dataset):
         faceTensor = self.face_transform(faceImg) # transforms face into ready-to-use numbers
 
         waveform, sr = torchaudio.load(voicePath) # load audio
+
+        if waveform.shape[0] > 1: # If it has 2 channels (Stereo)
+            waveform = torch.mean(waveform, dim=0, keepdim=True)
+            
         if sr != 16000: # resample if needed
             resampler = torchaudio.transforms.Resample(sr, 16000) # standardizes the audio quality
             waveform = resampler(waveform)
@@ -84,7 +80,7 @@ class MavCelebDataset(Dataset):
             #grab a random 3-second window instead of the first 3 seconds
             max_start = waveform.shape[1] - targetLen
             start_idx = random.randint(0, max_start)
-            waveform = waveform[:, :targetLen] # cropping if too long # cut it off at 3 seconds if it's too long
+            waveform = waveform[:, start_idx: start_idx + targetLen] # cropping if too long # cut it off at 3 seconds if it's too long
 
         specTensor = self.mel_transform(waveform) # create spectrogram
         specTensor = specTensor.unsqueeze(0) # add channel dim # pretend it has a color channel so the math works

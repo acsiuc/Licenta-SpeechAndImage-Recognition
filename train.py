@@ -38,14 +38,15 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = JointClassifier(num_classes=1200,embedding_dim=512).to(DEVICE) 
+    model = JointClassifier(num_classes=64,embedding_dim=512).to(DEVICE) 
     face_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE) 
     voice_translator = ModalityTranslator(input_dim = 128, output_dim = 512).to(DEVICE) 
 
     transformer_fusion = TransformerCrossAttention(embed_dim=512).to(DEVICE)
     
     params_to_train = list(model.parameters()) + list(face_translator.parameters()) + list(voice_translator.parameters()) + list(transformer_fusion.parameters()) # group all the brains together
-    optimizer = optim.Adam(params_to_train, lr=0.001) 
+    optimizer = optim.Adam(params_to_train, lr=0.001, weight_decay=1e-4) 
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     criterion = nn.CrossEntropyLoss() # the math that calculates if we guessed the name right
     early_stopper = EarlyStopping(patience=15)
     for epoch in range(EPOCHS):
@@ -100,6 +101,7 @@ if __name__ == "__main__":
         avg_loss = total_loss / len(train_loader) # calculate the average score for the whole epoch
         print(f"Epoch {epoch+1} | Loss: {avg_loss:.4f}")
         
+        scheduler.step(avg_loss)
         
         early_stopper(avg_loss) # check if we stopped improving
         if early_stopper.early_stop:

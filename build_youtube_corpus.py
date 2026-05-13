@@ -12,8 +12,8 @@ YOUTUBE_TARGETS = {
     # Men
     "CristianPresura": "https://www.youtube.com/watch?v=ZPu-EbA5f2I",
     "GheorgheBuhnici": "https://www.youtube.com/watch?v=z-VQi0iGpDk",
-    "SpiritulVremii": "https://www.youtube.com/watch?v=yG-q7_fmxec"
-    "Zaiafet:" "https://www.youtube.com/watch?v=n09AI9bui2I",
+    "SpiritulVremii": "https://www.youtube.com/watch?v=yG-q7_fmxec",
+    "Zaiafet": "https://www.youtube.com/watch?v=n09AI9bui2I",
     "DorianPopa": "https://www.youtube.com/watch?v=92UzrkZGmWw",
     
     # Women

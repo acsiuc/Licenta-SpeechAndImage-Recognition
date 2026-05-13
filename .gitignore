@@ -1,6 +1,6 @@
 temp/
 build_youtube_corpus/
-mavceleb_v1_test/
+mavceleb_v1_train/
 *.pt
 *.pth
 youtube_embeddings/

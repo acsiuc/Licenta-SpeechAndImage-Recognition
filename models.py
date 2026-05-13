@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet18, resnet34, resnet50, vgg16
+from torchvision.models import resnet18, vgg16, ResNet18_Weights, VGG16_Weights
 
 EMBEDDING_DIM = 128 # base size for our initial frozen vectors
 
@@ -9,17 +9,16 @@ class FaceEncoder(nn.Module):
     # the base model that looks at raw face images
     def __init__(self, embedding_dim: int = 128):
         super(FaceEncoder, self).__init__()
-        vgg= vgg16(pretrained = True) # grab a vgg16 brain that already knows how to see shapes
+        vgg = vgg16(weights=VGG16_Weights.IMAGENET1K_V1) # grab a vgg16 brain that already knows how to see shapes
         self.features = vgg.features # takes feature extraction from vgg
-        self.avgpool = vgg.avgpool 
-        
+        self.avgpool = vgg.avgpool
         self.projection = nn.Linear(512 * 7 * 7, embedding_dim) # squashes the giant vgg output down into our 128-number vector
 
     def forward(self, x):
         x = self.features(x) # pass image through vgg brain
-        x = self.avgpool(x) 
-        x = torch.flatten(x,1) # unroll the grid into a single flat line of numbers
-        x = self.projection(x) # squash it through the 128d 
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1) # unroll the grid into a single flat line of numbers
+        x = self.projection(x) # squash it through the 128d
         return F.normalize(x, p=2, dim=1) # normalizing so the math doesn't explode when we dot product
 
 
@@ -27,12 +26,25 @@ class VoiceEncoder(nn.Module):
     # the base model that listens to raw voice spectrograms
     def __init__(self, embedding_dim: int = 128):
         super(VoiceEncoder, self).__init__()
-        self.resnet = resnet18(pretrained = False) # not pretrained like image, spectrograms look completely different to ai
-        self.resnet.conv1 = nn.Conv2d(1,64, kernel_size = 7, stride = 2, padding = 3, bias = False) # spectrograms only have 1 color channel, replace first layer to accept 1 input instead of 3
-        self.resnet.fc = nn.Linear(self.resnet.fc.in_features, embedding_dim) # replaces the final layer to return our 128-dimensional vector
+        # Load pretrained ResNet18 and harvest its ImageNet knowledge
+        base = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+
+        # Replace the final FC layer to output our 128D vector
+        base.fc = nn.Linear(base.fc.in_features, embedding_dim)
+
+        # Replace conv1: spectrograms are 1-channel, not 3-channel (RGB)
+        # We create the new 1-channel layer first, then transfer the pretrained weights
+        # by SUMMING the 3 RGB channels together — this preserves the learned edge
+        # and texture detectors instead of starting from random noise
+        new_conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        with torch.no_grad():
+            new_conv1.weight = nn.Parameter(base.conv1.weight.sum(dim=1, keepdim=True))
+        base.conv1 = new_conv1
+
+        self.resnet = base
 
     def forward(self, x):
-        x = self. resnet(x) # pass spectrogram through resnet brain
+        x = self.resnet(x) # pass spectrogram through resnet brain
         return F.normalize(x, p=2, dim=1) # normalize the output vector
 
 class JointClassifier(nn.Module):
