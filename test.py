@@ -20,7 +20,7 @@ def test_model():
 
     model = JointClassifier(num_classes=NUM_CLASSES, embedding_dim=512).to(DEVICE)
     face_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
-    voice_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
+    voice_translator = ModalityTranslator(input_dim=192, output_dim=512).to(DEVICE) 
     transformer_fusion = TransformerCrossAttention(embed_dim=512).to(DEVICE)
 
     checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE, weights_only=False)

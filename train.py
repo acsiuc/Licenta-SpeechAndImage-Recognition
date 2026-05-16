@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     model              = JointClassifier(num_classes=64, embedding_dim=512).to(DEVICE)
     face_translator    = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
-    voice_translator   = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
+    voice_translator   = ModalityTranslator(input_dim=192, output_dim=512).to(DEVICE)
     transformer_fusion = TransformerCrossAttention(embed_dim=512).to(DEVICE)
 
     params_to_train = (

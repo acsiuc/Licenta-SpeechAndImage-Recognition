@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet18, vgg16, ResNet18_Weights, VGG16_Weights
+from torchvision.models import resnet18, vgg16, VGG16_Weights
 
 EMBEDDING_DIM = 128 # base size for our initial frozen vectors
 
@@ -23,29 +23,29 @@ class FaceEncoder(nn.Module):
 
 
 class VoiceEncoder(nn.Module):
-    # the base model that listens to raw voice spectrograms
-    def __init__(self, embedding_dim: int = 128):
+    # ECAPA-TDNN pretrained on VoxCeleb1+2 — purpose-built for speaker
+    # verification using 1D dilated convolutions that understand speech
+    # natively. Replaces ImageNet ResNet18 which had no acoustic knowledge.
+    # Reference: Desplanques et al., Interspeech 2020.
+    def __init__(self, savedir: str = "pretrained_ecapa"):
         super(VoiceEncoder, self).__init__()
-        # Load pretrained ResNet18 and harvest its ImageNet knowledge
-        base = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+        from speechbrain.inference.speaker import EncoderClassifier
+        self.encoder = EncoderClassifier.from_hparams(
+            source="speechbrain/spkrec-ecapa-voxceleb",
+            savedir=savedir,
+            run_opts={"device": "cpu"}
+        )
+        # Freeze all parameters — we use this as a fixed feature extractor
+        for p in self.encoder.parameters():
+            p.requires_grad_(False)
 
-        # Replace the final FC layer to output our 128D vector
-        base.fc = nn.Linear(base.fc.in_features, embedding_dim)
-
-        # Replace conv1: spectrograms are 1-channel, not 3-channel (RGB)
-        # We create the new 1-channel layer first, then transfer the pretrained weights
-        # by SUMMING the 3 RGB channels together — this preserves the learned edge
-        # and texture detectors instead of starting from random noise
-        new_conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        with torch.no_grad():
-            new_conv1.weight = nn.Parameter(base.conv1.weight.sum(dim=1, keepdim=True))
-        base.conv1 = new_conv1
-
-        self.resnet = base
-
-    def forward(self, x):
-        x = self.resnet(x) # pass spectrogram through resnet brain
-        return F.normalize(x, p=2, dim=1) # normalize the output vector
+    @torch.no_grad()
+    def forward(self, waveform):
+        # waveform: (B, T) raw audio at 16kHz, mono
+        # output:   (B, 192) L2-normalized speaker embedding
+        emb = self.encoder.encode_batch(waveform)  # (B, 1, 192)
+        emb = emb.squeeze(1)                        # (B, 192)
+        return F.normalize(emb, p=2, dim=1)
 
 class JointClassifier(nn.Module):
     # the bouncer that guesses the final name

@@ -87,7 +87,7 @@ class MavCelebDataset(Dataset):
         specTensor = self.amplitude_to_db(specTensor)  # convert to dB (log scale) — tighter dynamic range, better gradients
         specTensor = specTensor.unsqueeze(0)            # add channel dim: [1, 1, n_mels, time]
 
-        return faceTensor, specTensor, torch.tensor(label, dtype=torch.long) 
+        return faceTensor, waveform.squeeze(0), specTensor, torch.tensor(label, dtype=torch.long)
 
 class EmbeddingDataset(Dataset):
     def __init__(self, directory):

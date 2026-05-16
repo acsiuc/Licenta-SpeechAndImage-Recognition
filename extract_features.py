@@ -8,8 +8,8 @@ torchaudio.set_audio_backend("soundfile")
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-DATA_DIR = r"C:\Users\Axiuc\OneDrive - Technical University of Cluj-Napoca\Desktop\Licenta\mavceleb_v1_train" # path toraw images and audio
-OUTPUT_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings" # path to save the .pt vectors
+DATA_DIR = r"C:\Users\Axiuc\OneDrive - Technical University of Cluj-Napoca\Desktop\Licenta\build_youtube_corpus" # path toraw images and audio
+OUTPUT_DIR = r"C:\Users\Axiuc\Downloads\youtube_embeddings" # path to save the .pt vectors
 
 def extract():
     print("Loading models for extraction...")
@@ -28,13 +28,13 @@ def extract():
     print(f"Starting extraction for {len(dataset)} samples...")
 
     with torch.no_grad():
-        for i, (face_img, voice_spec, label) in enumerate(loader):
-            face_img, voice_spec = face_img.to(DEVICE), voice_spec.to(DEVICE)
+        for i, (face_img, waveform, voice_spec, label) in enumerate(loader):
+            face_img = face_img.to(DEVICE)
+            waveform  = waveform.to(DEVICE)
 
             face_emb  = face_net(face_img)
-            voice_emb = voice_net(voice_spec.squeeze(1))
+            voice_emb = voice_net(waveform)  # raw waveform, not spectrogram
 
-            # Save each sample in the batch as its own .pt file
             for b in range(face_emb.shape[0]):
                 sample_idx = i * loader.batch_size + b
                 save_path = os.path.join(OUTPUT_DIR, f"sample_{sample_idx}.pt")
