@@ -1,6 +1,13 @@
 temp/
 build_youtube_corpus/
 mavceleb_v1_train/
+mavceleb_v1_test/
+mavceleb_test_english/
+mavceleb_test_urdu/
+mav_celeb_v1_test/
+sub_score_English_heard.txt
+sub_score_Urdu_heard.txt
+archive.zip
 *.pt
 *.pth
 youtube_embeddings/
@@ -8,3 +15,5 @@ mavceleb_embeddings/
 __pycache__/
 *.pyc
 *.png
+pretrained_ecapa/ 
+English/
