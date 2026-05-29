@@ -52,6 +52,22 @@ def cross_modal_alignment_loss(face_embeddings, voice_embeddings, labels, temper
 
     return (loss_f2v.mean() + loss_v2f.mean()) / 2.0 # average the two penalties together
 
+def supervised_contrastive_loss(embeddings, labels, temperature=0.1):
+    import torch.nn.functional as F
+    embeddings = F.normalize(embeddings, p=2, dim=1)
+    sim = embeddings @ embeddings.T / temperature
+    sim = sim - sim.max(dim=1, keepdim=True).values.detach()
+    labels = labels.view(-1, 1)
+    pos_mask = labels.eq(labels.T).float()
+    eye = torch.eye(pos_mask.size(0), device=pos_mask.device)
+    pos_mask = pos_mask - eye
+    exp_sim = torch.exp(sim) * (1.0 - eye)
+    log_prob = sim - torch.log(exp_sim.sum(dim=1, keepdim=True) + 1e-12)
+    pos_count = pos_mask.sum(dim=1).clamp_min(1.0)
+    loss = -(pos_mask * log_prob).sum(dim=1) / pos_count
+    return loss.mean()
+
+
 def paeff_fusion(face_emb, voice_emb):
     # the magic fusion machine
 
