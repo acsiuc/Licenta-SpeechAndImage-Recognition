@@ -21,7 +21,51 @@ YOUTUBE_TARGETS = {
     "Mimi": "https://www.youtube.com/watch?v=_emLikcsV-U",
     "Marilu": "https://www.youtube.com/watch?v=F63RARBLQOI",
     "LorenaVisan": "https://www.youtube.com/watch?v=d3WwTdikN-4&t=17s",
-    "RuxSiOpulenta": "https://www.youtube.com/watch?v=3LB1RdxQg0A"
+    "RuxSiOpulenta": "https://www.youtube.com/watch?v=3LB1RdxQg0A",
+    # Men — Stand-up (new)
+    "RaduBucalae":    "https://www.youtube.com/watch?v=67r0QEMIb1g",
+"CatalinBordea":  "https://www.youtube.com/watch?v=zH-8uhhnWc0",~
+    "Teo":            "https://www.youtube.com/watch?v=nC6MXCMJ5PQ",
+    "CosminNatanticu":"https://www.youtube.com/watch?v=sEMwLLthMqs",
+    "Micutzu":        "https://www.youtube.com/watch?v=2CrUHESag7U",
+    "DanBadea":       "https://www.youtube.com/watch?v=49tqnbMOUR4",
+    "ClaudiuPopa":    "https://www.youtube.com/watch?v=bXZLrV3WLp0",
+    "Vio":            "https://www.youtube.com/watch?v=A3PFZE1YXyc",
+    "MihaiBobonete":  "https://www.youtube.com/watch?v=nQBMnoupeNQ",
+    "NelucCortea":    "https://www.youtube.com/watch?v=IKvYZoCAYB4",
+    "AlexMocanu":     "https://www.youtube.com/watch?v=MRY4CopDU_A",
+    "AndreiCiobanu":  "https://www.youtube.com/watch?v=bzqoWcr1EFI",
+    # Men — Vloggers / Entertainers (new)
+    "Selly":          "https://www.youtube.com/watch?v=boCyTnKCnqM",
+    "MirceaBravo":    "https://www.youtube.com/watch?v=0jpDgZ1umfw",
+    "AlexVelea":      "https://www.youtube.com/watch?v=SwHbnZp3b3c",
+    "Speak":          "https://www.youtube.com/watch?v=uaR9aYTGrPY",
+    "BogdanTeches":   "https://www.youtube.com/watch?v=5QFsr9xxJFQ",
+    "MihaiGainusa":   "https://www.youtube.com/watch?v=d8w9rl-2FPc",
+    "RazvanGogan":    "https://www.youtube.com/watch?v=hC4oHSjx020",
+    "VladGherman":    "https://www.youtube.com/watch?v=HMUs9S3jm_Y",
+    "CristianFlorea": "https://www.youtube.com/watch?v=PUzAjSdOfug",
+    "DaniOtil":       "https://www.youtube.com/watch?v=UQyii9ObPdI",
+    "VladMunteanu":   "https://www.youtube.com/watch?v=5Xn9kn8NGEI",
+    "MihaiMorar":     "https://www.youtube.com/watch?v=dRGAX7yBsXc",
+    "PavelBartos":    "https://www.youtube.com/watch?v=OQVY8i3zSbk",
+    # Women — Stand-up (new)
+    "MariaPopovici":  "https://www.youtube.com/watch?v=1d_-qcrowxU",
+    "IoanaState":     "https://www.youtube.com/watch?v=vTryt3DgePQ",
+    # Women — Vloggers / Influencers (new)
+    "AndraGogan":     "https://www.youtube.com/watch?v=9SxBOR2d8DU",
+    "AndreeaBalaban": "https://www.youtube.com/watch?v=fnG6mGu-qYk",
+    "IoanaGrama":     "https://www.youtube.com/watch?v=djvxFsRbNVY",
+    "IrinaDeaconescu":"https://www.youtube.com/watch?v=6gMgVHGfZt4",
+    "SanzianaNegru":  "https://www.youtube.com/watch?v=3XKR-BqNGy0",
+    "CarmenGrebenisan":"https://www.youtube.com/watch?v=nWXmcBMb5sg",
+    "IrinaColumbeanu":"https://www.youtube.com/watch?v=mqSDm2eNsQ0",
+    "JamilaCuisine":  "https://www.youtube.com/watch?v=E0hkLMCHpDg",
+    "CristinaAlmasan":"https://www.youtube.com/watch?v=8wv2wFzV76U",
+    "CezaraCristescu":"https://www.youtube.com/watch?v=zcfhm-8Q_KI",
+    "BiancaAdam":     "https://www.youtube.com/watch?v=79KyCOOpWRQ",
+    "AnaMorodan":     "https://www.youtube.com/watch?v=FyPWQloYEuU",
+    "AlinaCeusan":    "https://www.youtube.com/watch?v=GtuTeXLUoC8",
 }
 
 def setup_directories():

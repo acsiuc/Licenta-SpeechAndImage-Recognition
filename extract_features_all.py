@@ -5,8 +5,6 @@ import glob
 import random
 import torch.nn.functional as F
 from models import FaceEncoder, VoiceEncoder
-from torchvision import transforms
-from PIL import Image
 
 try:
     torchaudio.set_audio_backend("soundfile")
@@ -19,7 +17,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DATASETS = [
     {
         "path": r"C:\Users\Axiuc\OneDrive - Technical University of Cluj-Napoca\Desktop\Licenta\mavceleb_v1_train",
-        "languages": ["English", "Urdu"]
+        "languages": ["English"]
     },
     {
         "path": r"C:\Users\Axiuc\OneDrive - Technical University of Cluj-Napoca\Desktop\Licenta\v2",
@@ -33,12 +31,6 @@ DATASETS = [
 
 OUTPUT_DIR  = r"C:\Users\Axiuc\Downloads\mavceleb_all_embeddings"
 MULTIPLIER  = 500  # pairs per identity per language combination
-FACE_TRANSFORM = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225])
-])
 
 def get_files(root, identity, language, ext):
     pattern = os.path.join(root, identity, language, "**", f"*.{ext}")
@@ -104,10 +96,17 @@ def extract():
                 voice_path = random.choice(voice_files[v_lang])
 
                 # face embedding
+                # face embedding — ArcFace needs BGR numpy image
                 try:
-                    img         = Image.open(face_path).convert("RGB")
-                    face_tensor = FACE_TRANSFORM(img).unsqueeze(0).to(DEVICE)
-                    face_emb    = face_net(face_tensor)
+                    import cv2
+                    img_bgr  = cv2.imread(face_path)
+                    if img_bgr is None:
+                        continue
+                    faces    = face_net.app.get(img_bgr)
+                    if len(faces) == 0:
+                        continue
+                    face_emb = torch.tensor(faces[0].embedding, dtype=torch.float32).unsqueeze(0)
+                    face_emb = F.normalize(face_emb, p=2, dim=1)
                 except Exception as e:
                     continue
 

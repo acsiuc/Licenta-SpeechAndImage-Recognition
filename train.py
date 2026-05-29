@@ -26,8 +26,8 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False)
 
-    model              = JointClassifier(num_classes=64, embedding_dim=512).to(DEVICE)
-    face_translator    = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
+    model              = JointClassifier(num_classes=198, embedding_dim=512).to(DEVICE)
+    face_translator = ModalityTranslator(input_dim=512, output_dim=512).to(DEVICE)
     voice_translator   = ModalityTranslator(input_dim=192, output_dim=512).to(DEVICE)
     transformer_fusion = TransformerCrossAttention(embed_dim=512).to(DEVICE)
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
                 logits     = model(fused_emb)
                 class_loss = criterion(logits, labels.view(-1))
                 supcon_loss = supervised_contrastive_loss(fused_emb, labels)
-                
+
                 loss = class_loss + (0.5 * supcon_loss) + (10.0 * align_loss)
                 total_val_loss += loss.item()
 

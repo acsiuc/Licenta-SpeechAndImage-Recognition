@@ -1,65 +1,63 @@
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from dataset import EmbeddingDataset 
+from dataset import EmbeddingDataset
 from models import ModalityTranslator
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-TEST_DIR = r"C:\Users\Axiuc\Downloads\youtube_embeddings" 
+DEVICE   = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+TEST_DIR = r"C:\Users\Axiuc\Downloads\youtube_embeddings"
 
 def test_unseen_biometrics():
     print("Loading Unseen YouTube Data...")
-    dataset = EmbeddingDataset(TEST_DIR) 
-    # Load all 80 samples at once so we can do a massive cross-comparison lineup
-    loader = DataLoader(dataset, batch_size=100, shuffle=False)
+    dataset = EmbeddingDataset(TEST_DIR)
+    loader  = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
 
-    face_translator = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE) 
-    voice_translator = ModalityTranslator(input_dim=192, output_dim=512).to(DEVICE) 
+    face_translator  = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
+    voice_translator = ModalityTranslator(input_dim=192, output_dim=512).to(DEVICE)
 
-    print("Loading Biometric Translators...")
     checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE, weights_only=False)
-    face_translator.load_state_dict(checkpoint['face_translator']) 
-    voice_translator.load_state_dict(checkpoint['voice_translator']) 
-
-    face_translator.eval() 
+    face_translator.load_state_dict(checkpoint['face_translator'])
+    voice_translator.load_state_dict(checkpoint['voice_translator'])
+    face_translator.eval()
     voice_translator.eval()
-    
-    with torch.no_grad(): 
+
+    with torch.no_grad():
         for face_emb, voice_emb, labels in loader:
             face_emb = face_emb.to(DEVICE)
             voice_emb = voice_emb.to(DEVICE)
             labels = labels.to(DEVICE)
 
-            # Translate to 512D space
-            f_512 = face_translator(face_emb) 
-            v_512 = voice_translator(voice_emb) 
-            
-            # 1. Let's look at the raw numbers!
-            true_match_sims = F.cosine_similarity(f_512, v_512)
-            print(f"\nAverage Similarity of True Matches: {true_match_sims.mean().item():.4f}")
-            
-            # 2. The Lineup Test (Rank-1 Retrieval)
-            # Compare every face against EVERY voice in the room
-            sim_matrix = torch.matmul(f_512, v_512.T)
-            
-            # For each face, find the index of the voice that scored the absolute highest
-            best_match_indices = torch.argmax(sim_matrix, dim=1)
-            
-            # Grab the ID labels of those winning voices
-            predicted_labels = labels[best_match_indices]
-            
-            # Check if the winning voice's ID matches the face's ID
-            correct_predictions = (predicted_labels == labels).sum().item()
-            total_tests = labels.size(0)
+            f_512 = face_translator(face_emb)
+            v_512 = voice_translator(voice_emb)
 
-            accuracy = (correct_predictions / total_tests) * 100 
-            
+            # average face embeddings per identity
+            unique_labels = labels.unique()
+            n = len(unique_labels)
+
+            avg_faces  = torch.zeros(n, 512).to(DEVICE)
+            avg_voices = torch.zeros(n, 512).to(DEVICE)
+
+            for i, lbl in enumerate(unique_labels):
+                mask = labels == lbl
+                avg_faces[i]  = F.normalize(f_512[mask].mean(dim=0), p=2, dim=0)
+                avg_voices[i] = F.normalize(v_512[mask].mean(dim=0), p=2, dim=0)
+
+            # true match similarity
+            true_sims = F.cosine_similarity(avg_faces, avg_voices)
+            print(f"\nAverage Similarity of True Matches: {true_sims.mean().item():.4f}")
+
+            # Rank-1 retrieval across identities
+            sim_matrix   = torch.matmul(avg_faces, avg_voices.T)
+            best_matches = torch.argmax(sim_matrix, dim=1)
+            correct      = (best_matches == torch.arange(n).to(DEVICE)).sum().item()
+            accuracy     = correct / n * 100
+
             print(f"\n--- TRUE IN-THE-WILD RESULTS (Rank-1 Retrieval) ---")
-            print(f"Total Lineups Conducted: {total_tests}")
-            print(f"Correct Top-Choice Matches: {correct_predictions}")
-            print(f"Zero-Shot Accuracy: {accuracy:.2f}%")
-            
-            break # We only need one batch since it loaded all 80
+            print(f"Total Identities:          {n}")
+            print(f"Correct Top-Choice Matches:{correct}")
+            print(f"Zero-Shot Accuracy:        {accuracy:.2f}%")
+            print(f"Random Chance:             {100/n:.2f}%")
+            break
 
 if __name__ == "__main__":
     test_unseen_biometrics()

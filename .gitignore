@@ -5,8 +5,10 @@ mavceleb_v1_test/
 mavceleb_test_english/
 mavceleb_test_urdu/
 mav_celeb_v1_test/
+mav_celeb_v3_train/
 sub_score_English_heard.txt
 sub_score_Urdu_heard.txt
+v2/
 archive.zip
 *.pt
 *.pth
@@ -17,3 +19,9 @@ __pycache__/
 *.png
 pretrained_ecapa/ 
 English/
+English_test.txt
+Urdu_test.txt
+sub_score_*.txt
+mav_celeb_v3_train/
+v2/
+generate_final_submission.py

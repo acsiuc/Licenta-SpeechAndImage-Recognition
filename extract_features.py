@@ -8,8 +8,8 @@ torchaudio.set_audio_backend("soundfile")
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-DATA_DIR = r"C:\Users\Axiuc\OneDrive - Technical University of Cluj-Napoca\Desktop\Licenta\build_youtube_corpus" # path toraw images and audio
-OUTPUT_DIR = r"C:\Users\Axiuc\Downloads\youtube_embeddings" # path to save the .pt vectors
+DATA_DIR = r"C:\Users\Axiuc\OneDrive - Technical University of Cluj-Napoca\Desktop\Licenta\mavceleb_v1_test" # path toraw images and audio
+OUTPUT_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings" # path to save the .pt vectors
 
 def extract():
     print("Loading models for extraction...")
@@ -20,7 +20,7 @@ def extract():
 
     
     dataset = MavCelebDataset(DATA_DIR)
-    loader = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=4, pin_memory=True)
+    loader = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=0, pin_memory=True)
 
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR) 
