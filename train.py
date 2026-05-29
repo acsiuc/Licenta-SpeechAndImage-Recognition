@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from dataset import EmbeddingDataset  # no longer duplicated here
 from models import JointClassifier, ModalityTranslator, TransformerCrossAttention
-from utils import orthogonal_projection_loss, EarlyStopping, cross_modal_alignment_loss
+from utils import supervised_contrastive_loss, EarlyStopping, cross_modal_alignment_loss
 
 EMBEDDING_DIR = r"C:\Users\Axiuc\Downloads\mavceleb_embeddings"
 BATCH_SIZE = 32
@@ -68,13 +68,9 @@ if __name__ == "__main__":
             optimizer.zero_grad()
             logits     = model(fused_emb)
             class_loss = criterion(logits, labels.view(-1))
-            ortho_loss = orthogonal_projection_loss(fused_emb, labels)
+            supcon_loss = supervised_contrastive_loss(fused_emb, labels)
 
-            if epoch == 0 and total_train_loss == 0:
-                print(f"[Epoch 1 first batch] Class: {class_loss.item():.4f} | "
-                      f"Ortho: {ortho_loss.item():.4f} | Align: {align_loss.item():.4f}")
-
-            loss = class_loss + (0.1 * ortho_loss) + (10.0 * align_loss)
+            loss = class_loss + (0.5 * supcon_loss) + (10.0 * align_loss)
             loss.backward()
             optimizer.step()
             total_train_loss += loss.item()
@@ -102,9 +98,9 @@ if __name__ == "__main__":
 
                 logits     = model(fused_emb)
                 class_loss = criterion(logits, labels.view(-1))
-                ortho_loss = orthogonal_projection_loss(fused_emb, labels)
-
-                loss = class_loss + (0.1 * ortho_loss) + (10.0 * align_loss)
+                supcon_loss = supervised_contrastive_loss(fused_emb, labels)
+                
+                loss = class_loss + (0.5 * supcon_loss) + (10.0 * align_loss)
                 total_val_loss += loss.item()
 
         avg_val_loss = total_val_loss / len(val_loader)

@@ -32,7 +32,7 @@ DATASETS = [
 ]
 
 OUTPUT_DIR  = r"C:\Users\Axiuc\Downloads\mavceleb_all_embeddings"
-MULTIPLIER  = 200  # pairs per identity per language combination
+MULTIPLIER  = 500  # pairs per identity per language combination
 FACE_TRANSFORM = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),

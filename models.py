@@ -6,20 +6,38 @@ from torchvision.models import resnet18, vgg16, VGG16_Weights
 EMBEDDING_DIM = 128 # base size for our initial frozen vectors
 
 class FaceEncoder(nn.Module):
-    # the base model that looks at raw face images
-    def __init__(self, embedding_dim: int = 128):
+    # ArcFace iResNet50 pretrained on VGGFace2 via InsightFace buffalo_l
+    # Purpose-built for face identity recognition — extracts 512D embeddings
+    # that capture identity-discriminative facial geometry (jaw width, orbital
+    # spacing, nasal structure) which biologically correlates with vocal tract.
+    # Reference: Deng et al., ArcFace, CVPR 2019.
+    def __init__(self):
         super(FaceEncoder, self).__init__()
-        vgg = vgg16(weights=VGG16_Weights.IMAGENET1K_V1) # grab a vgg16 brain that already knows how to see shapes
-        self.features = vgg.features # takes feature extraction from vgg
-        self.avgpool = vgg.avgpool
-        self.projection = nn.Linear(512 * 7 * 7, embedding_dim) # squashes the giant vgg output down into our 128-number vector
+        from insightface.app import FaceAnalysis
+        self.app = FaceAnalysis(name='buffalo_l', allowed_modules=['recognition'])
+        self.app.prepare(ctx_id=-1)  # CPU locally, GPU on Colab via ctx_id=0
+        for p in self.parameters():
+            p.requires_grad = False
 
-    def forward(self, x):
-        x = self.features(x) # pass image through vgg brain
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1) # unroll the grid into a single flat line of numbers
-        x = self.projection(x) # squash it through the 128d
-        return F.normalize(x, p=2, dim=1) # normalizing so the math doesn't explode when we dot product
+    def forward(self, img_bgr: torch.Tensor) -> torch.Tensor:
+        # img_bgr: (B, H, W, 3) numpy uint8 or (B, 3, H, W) tensor
+        # Returns: (B, 512) L2-normalized embeddings
+        if isinstance(img_bgr, torch.Tensor):
+            # Convert from (B, 3, H, W) float tensor to (B, H, W, 3) uint8 numpy
+            img_bgr = (img_bgr.permute(0, 2, 3, 1).cpu().numpy() * 255).astype(np.uint8)
+        
+        embeddings = []
+        for img in img_bgr:
+            faces = self.app.get(img)
+            if len(faces) > 0:
+                emb = torch.tensor(faces[0].embedding, dtype=torch.float32)
+            else:
+                emb = torch.zeros(512, dtype=torch.float32)
+            embeddings.append(emb)
+        
+        emb_tensor = torch.stack(embeddings)
+        emb_tensor = F.normalize(emb_tensor, p=2, dim=1)
+        return emb_tensor
 
 
 class VoiceEncoder(nn.Module):
