@@ -25,3 +25,5 @@ sub_score_*.txt
 mav_celeb_v3_train/
 v2/
 generate_final_submission.py
+mav_celeb_ground_truths/
+model_weights/
