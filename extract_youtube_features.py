@@ -3,8 +3,8 @@ import torchaudio
 import os
 import glob
 from models import FaceEncoder, VoiceEncoder
-from torchvision import transforms
-from PIL import Image
+import cv2
+import torch.nn.functional as F 
 
 try:
     torchaudio.set_audio_backend("soundfile")
@@ -18,18 +18,11 @@ OUTPUT_DIR = r"C:\Users\Axiuc\Downloads\youtube_embeddings"
 FACE_DIR  = os.path.join(CORPUS_DIR, "faces", "English")
 VOICE_DIR = os.path.join(CORPUS_DIR, "voices", "English")
 
-face_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225])
-])
-
 def extract():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    face_net  = FaceEncoder().to(DEVICE).eval()
-    voice_net = VoiceEncoder().to(DEVICE).eval()
+    face_net  = FaceEncoder().eval()
+    voice_net = VoiceEncoder().eval()
 
     # get unique identity names from voice files
     voice_files = glob.glob(os.path.join(VOICE_DIR, "*.wav"))
@@ -60,7 +53,6 @@ def extract():
             # take 3 seconds from middle
             target_len = 16000 * 3
             if waveform.shape[1] < target_len:
-                import torch.nn.functional as F
                 waveform = F.pad(waveform, (0, target_len - waveform.shape[1]))
             else:
                 start = (waveform.shape[1] - target_len) // 2
@@ -71,9 +63,14 @@ def extract():
 
             # save one sample per face image
             for face_path in face_paths:
-                img = Image.open(face_path).convert("RGB")
-                face_tensor = face_transform(img).unsqueeze(0).to(DEVICE)
-                face_emb = face_net(face_tensor)
+                img_bgr = cv2.imread(face_path)
+                if img_bgr is None:
+                    continue
+                faces = face_net.app.get(img_bgr)
+                if len(faces) == 0:
+                    continue
+                face_emb = torch.tensor(faces[0].embedding, dtype=torch.float32).unsqueeze(0)
+                face_emb = F.normalize(face_emb, p=2, dim=1)
 
                 save_path = os.path.join(OUTPUT_DIR, f"sample_{sample_idx:04d}.pt")
                 torch.save({

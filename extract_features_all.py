@@ -4,6 +4,7 @@ import os
 import glob
 import random
 import torch.nn.functional as F
+import cv2
 from models import FaceEncoder, VoiceEncoder
 
 try:
@@ -39,8 +40,8 @@ def get_files(root, identity, language, ext):
 def extract():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    face_net  = FaceEncoder().to(DEVICE).eval()
-    voice_net = VoiceEncoder().to(DEVICE).eval()
+    face_net  = FaceEncoder().eval()
+    voice_net = VoiceEncoder().eval()
 
     # Build global identity map across all datasets
     # key: (dataset_idx, identity_folder) → label
@@ -98,7 +99,6 @@ def extract():
                 # face embedding
                 # face embedding — ArcFace needs BGR numpy image
                 try:
-                    import cv2
                     img_bgr  = cv2.imread(face_path)
                     if img_bgr is None:
                         continue

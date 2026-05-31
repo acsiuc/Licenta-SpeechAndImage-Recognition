@@ -12,10 +12,10 @@ def test_unseen_biometrics():
     dataset = EmbeddingDataset(TEST_DIR)
     loader  = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
 
-    face_translator  = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
+    face_translator  = ModalityTranslator(input_dim=512, output_dim=512).to(DEVICE)
     voice_translator = ModalityTranslator(input_dim=192, output_dim=512).to(DEVICE)
 
-    checkpoint = torch.load("model_cu_transformer.pth", map_location=DEVICE, weights_only=False)
+    checkpoint = torch.load("model_arcface.pth", map_location=DEVICE, weights_only=False)
     face_translator.load_state_dict(checkpoint['face_translator'])
     voice_translator.load_state_dict(checkpoint['voice_translator'])
     face_translator.eval()

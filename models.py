@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet18, vgg16, VGG16_Weights
+
 
 EMBEDDING_DIM = 128 # base size for our initial frozen vectors
 
@@ -14,8 +14,8 @@ class FaceEncoder(nn.Module):
     def __init__(self):
         super(FaceEncoder, self).__init__()
         from insightface.app import FaceAnalysis
-        self.app = FaceAnalysis(name='buffalo_l', allowed_modules=['recognition'])
-        self.app.prepare(ctx_id=-1)  # CPU locally, GPU on Colab via ctx_id=0
+        self.app = FaceAnalysis(name='buffalo_l')
+        self.app.prepare(ctx_id=-1, det_size=(128, 128))
         for p in self.parameters():
             p.requires_grad = False
 

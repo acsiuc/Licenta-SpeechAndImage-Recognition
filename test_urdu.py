@@ -27,10 +27,10 @@ def test():
     files = sorted(glob.glob(os.path.join(TEST_DIR, "*.pt")))
     print(f"Loading {len(files)} Urdu test samples...")
 
-    face_translator  = ModalityTranslator(input_dim=128, output_dim=512).to(DEVICE)
+    face_translator  = ModalityTranslator(input_dim=512, output_dim=512).to(DEVICE)
     voice_translator = ModalityTranslator(input_dim=192, output_dim=512).to(DEVICE)
 
-    ckpt = torch.load("model_cu_transformer.pth", map_location=DEVICE, weights_only=False)
+    ckpt = torch.load("model_arcface.pth", map_location=DEVICE, weights_only=False)
     face_translator.load_state_dict(ckpt['face_translator'])
     voice_translator.load_state_dict(ckpt['voice_translator'])
     face_translator.eval()
