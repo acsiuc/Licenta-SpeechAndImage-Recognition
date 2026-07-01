@@ -77,31 +77,46 @@ def visualize_umap_urdu():
     n = len(labels_list)
     face_2d = embeddings_2d[:n]
     voice_2d = embeddings_2d[n:]
-    plot_labels = labels_list
+    plot_labels = np.array(labels_list)
 
     print('Generating Plot...')
-    plt.figure(figsize=(14, 10))
+    plt.figure(figsize=(12, 9))
 
     unique_labels = np.unique(plot_labels)
-    cmap = matplotlib.colormaps['nipy_spectral']
 
-    for i, label in enumerate(unique_labels):
-        idx = np.where(np.array(plot_labels) == label)[0]
-        color = cmap(i / len(unique_labels))
+    n_highlight = 10
+    rng = np.random.RandomState(1023)
+    highlight_labels = rng.choice(unique_labels, size=min(n_highlight, len(unique_labels)),
+                                   replace=False)
+    highlight_cmap = matplotlib.colormaps['tab10']
 
-        plt.scatter(face_2d[idx, 0], face_2d[idx, 1], color=color, marker='o', s=30,
-                    label=f'ID{label} (Face)', alpha=0.85, edgecolors='k')
-        plt.scatter(voice_2d[idx, 0], voice_2d[idx, 1], color=color, marker='^', s=30,
-                    label=f'ID{label} (Urdu Voice)', alpha=0.85)
+    plt.scatter(face_2d[:, 0], face_2d[:, 1], color='lightgray', marker='o', s=25,
+                alpha=0.5, edgecolors='none', zorder=1)
+    plt.scatter(voice_2d[:, 0], voice_2d[:, 1], color='lightgray', marker='^', s=25,
+                alpha=0.5, edgecolors='none', zorder=1)
+
+    for i, label in enumerate(highlight_labels):
+        idx = np.where(plot_labels == label)[0]
+        color = highlight_cmap(i)
+
+        plt.scatter(face_2d[idx, 0], face_2d[idx, 1], color=color, marker='o', s=90,
+                    label=f'ID{label} (Face)', alpha=0.95, edgecolors='k', linewidths=0.8,
+                    zorder=3)
+        plt.scatter(voice_2d[idx, 0], voice_2d[idx, 1], color=color, marker='^', s=90,
+                    label=f'ID{label} (Urdu Voice)', alpha=0.95, edgecolors='k', linewidths=0.8,
+                    zorder=3)
 
         f_point = face_2d[idx][0]
         v_point = voice_2d[idx][0]
         plt.plot([f_point[0], v_point[0]], [f_point[1], v_point[1]],
-                 color=color, linestyle='--', alpha=0.3)
+                 color=color, linestyle='--', alpha=0.6, linewidth=1.5, zorder=2)
 
     plt.title("UMAP: ArcFace+ECAPA Fused Embeddings on Held-Out Urdu Test Set\n"
-              "(64 known identities, unseen language, unseen recordings)")
-    plt.grid(True, linestyle=':', alpha=0.6)
+              "(64 known identities, unseen language, unseen recordings — "
+              f"{len(highlight_labels)} identities highlighted for clarity)")
+    plt.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=8, ncol=1)
+    plt.grid(True, linestyle=':', alpha=0.4)
+    plt.tight_layout()
 
     plt.savefig("urdu_test_umap.png", bbox_inches='tight', dpi=300)
     plt.show()
