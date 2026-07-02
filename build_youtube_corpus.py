@@ -15,7 +15,7 @@ YOUTUBE_TARGETS = {
     "SpiritulVremii": "https://www.youtube.com/watch?v=yG-q7_fmxec",
     "Zaiafet": "https://www.youtube.com/watch?v=n09AI9bui2I",
     "DorianPopa": "https://www.youtube.com/watch?v=92UzrkZGmWw",
-    
+
     # Women
     "IrinaManea": "https://www.youtube.com/watch?v=wxk1ahooRWg",
     "Mimi": "https://www.youtube.com/watch?v=_emLikcsV-U",
@@ -24,7 +24,7 @@ YOUTUBE_TARGETS = {
     "RuxSiOpulenta": "https://www.youtube.com/watch?v=3LB1RdxQg0A",
     # Men — Stand-up (new)
     "RaduBucalae":    "https://www.youtube.com/watch?v=67r0QEMIb1g",
-"CatalinBordea":  "https://www.youtube.com/watch?v=zH-8uhhnWc0",~
+    "CatalinBordea":  "https://www.youtube.com/watch?v=zH-8uhhnWc0",
     "Teo":            "https://www.youtube.com/watch?v=nC6MXCMJ5PQ",
     "CosminNatanticu":"https://www.youtube.com/watch?v=sEMwLLthMqs",
     "Micutzu":        "https://www.youtube.com/watch?v=2CrUHESag7U",
@@ -68,13 +68,22 @@ YOUTUBE_TARGETS = {
     "AlinaCeusan":    "https://www.youtube.com/watch?v=GtuTeXLUoC8",
 }
 
-def setup_directories():
+def get_identity_id_map():
+    """Maps each real name to an anonymized ID001, ID002, ... identifier,
+    in the fixed dict-insertion order of YOUTUBE_TARGETS, so the mapping
+    is stable and reproducible across runs."""
+    return {
+        name: f"ID{str(i + 1).zfill(3)}"
+        for i, name in enumerate(YOUTUBE_TARGETS.keys())
+    }
     os.makedirs(FACE_DIR, exist_ok=True)
     os.makedirs(VOICE_DIR, exist_ok=True)
     os.makedirs("temp", exist_ok=True)
 
-def extract_multiple_faces(video_path, identity, save_dir, num_faces=5):
-    """Scans the video and extracts N distinct faces spaced temporally."""
+def extract_multiple_faces(video_path, identity, video_id, save_dir, num_faces=10):
+    """Scans the video and extracts N distinct faces spaced temporally.
+    Saves into save_dir/identity/video_id/face_N.jpg, mirroring MAVCeleb's
+    id/video_id/frames nesting convention."""
     print(f"   -> Scanning for {num_faces} distinct facial frames...")
     cap = cv2.VideoCapture(video_path)
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -87,9 +96,12 @@ def extract_multiple_faces(video_path, identity, save_dir, num_faces=5):
     if total_frames <= start_frame:
         start_frame = 0 # fallback just in case the video is super short
 
-    # step size to jump through the video in 5 equal chunks
+    # step size to jump through the video in num_faces equal chunks
     remaining_frames = total_frames - start_frame
     step = int(remaining_frames / num_faces)
+
+    identity_session_dir = os.path.join(save_dir, identity, video_id)
+    os.makedirs(identity_session_dir, exist_ok=True)
 
     faces_saved = 0
 
@@ -99,7 +111,7 @@ def extract_multiple_faces(video_path, identity, save_dir, num_faces=5):
 
         face_found = False
         attempts = 0
-        
+
         # Scan forward from the target jump point until we find a clear face (max 150 frames)
         while cap.isOpened() and not face_found and attempts < 150:
             ret, frame = cap.read()
@@ -122,9 +134,9 @@ def extract_multiple_faces(video_path, identity, save_dir, num_faces=5):
                 y2 = min(frame.shape[0], y + h + margin)
 
                 face_crop = frame[y1:y2, x1:x2]
-                
-                # Save as Identity_1.jpg, Identity_2.jpg, etc.
-                save_path = os.path.join(save_dir, f"{identity}_{faces_saved + 1}.jpg")
+
+                # Save as face_0.jpg, face_1.jpg, etc. within identity/video_id/
+                save_path = os.path.join(identity_session_dir, f"face_{faces_saved}.jpg")
                 cv2.imwrite(save_path, face_crop)
                 faces_saved += 1
                 face_found = True
@@ -134,18 +146,65 @@ def extract_multiple_faces(video_path, identity, save_dir, num_faces=5):
     if faces_saved < num_faces:
         print(f"   -> WARNING: Only found {faces_saved}/{num_faces} clean faces in this video.")
 
+def get_audio_duration(path):
+    """Returns duration in seconds via ffprobe."""
+    result = subprocess.run(
+        ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+         '-of', 'default=noprint_wrappers=1:nokey=1', path],
+        capture_output=True, text=True
+    )
+    return float(result.stdout.strip())
+
 def process_audio(video_path, save_path):
+    """Extracts the full audio track, mono, 16kHz."""
     print(f"   -> Extracting and downsampling acoustic waveform...")
     command = [
-        'ffmpeg', '-y', 
-        '-i', video_path, 
+        'ffmpeg', '-y',
+        '-i', video_path,
         '-vn', '-ac', '1', '-ar', '16000', save_path
+    ]
+    subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def extract_center_crop(full_wav_path, crop_save_path, crop_seconds=3.0):
+    """
+    Extracts a fixed-length segment centered on the midpoint of the full
+    track. Center cropping is preferred over cropping from the start
+    because YouTube videos frequently open with music, applause, or crowd
+    noise before the speaker begins, making the midpoint a more reliable
+    source of clean speech than the start of the recording.
+    """
+    print(f"   -> Extracting {crop_seconds}s center crop...")
+    duration = get_audio_duration(full_wav_path)
+
+    if duration <= crop_seconds:
+        # track is shorter than the crop window, just use the whole thing
+        start = 0.0
+        actual_crop = duration
+    else:
+        center = duration / 2.0
+        start = max(0.0, center - crop_seconds / 2.0)
+        actual_crop = crop_seconds
+
+    command = [
+        'ffmpeg', '-y',
+        '-i', full_wav_path,
+        '-ss', str(start), '-t', str(actual_crop),
+        '-ac', '1', '-ar', '16000',
+        crop_save_path
     ]
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def main():
     setup_directories()
-    
+    id_map = get_identity_id_map()
+
+    # Save the name-to-ID mapping once, kept separately and not committed
+    # to any public repo folder, purely for internal bookkeeping.
+    mapping_path = os.path.join(CORPUS_DIR, "identity_mapping.txt")
+    with open(mapping_path, "w", encoding="utf-8") as f:
+        for name, anon_id in id_map.items():
+            f.write(f"{anon_id}\t{name}\n")
+
     ydl_opts = {
         'format': 'best[ext=mp4][height<=720]/best',
         'outtmpl': 'temp/%(id)s.%(ext)s',
@@ -153,28 +212,35 @@ def main():
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        for identity, url in YOUTUBE_TARGETS.items():
-            print(f"\nProcessing Identity: [{identity}]")
-            
-            voice_save_path = os.path.join(VOICE_DIR, f"{identity}.wav")
-            
-            # Simple check if audio already exists to avoid re-downloading
-            if os.path.exists(voice_save_path):
-                print("   -> Audio data already exists. Assuming faces are done. Skipping.")
-                continue
+        for name, url in YOUTUBE_TARGETS.items():
+            anon_id = id_map[name]
+            print(f"\nProcessing Identity: [{anon_id}]")
 
             try:
                 print(f"   -> Downloading media stream...")
                 info = ydl.extract_info(url, download=True)
                 video_path = f"temp/{info['id']}.mp4"
-                
-                extract_multiple_faces(video_path, identity, FACE_DIR)
+                video_id = info['id']
+
+                identity_voice_dir = os.path.join(VOICE_DIR, anon_id, video_id)
+                os.makedirs(identity_voice_dir, exist_ok=True)
+
+                voice_save_path = os.path.join(identity_voice_dir, "voice_full.wav")
+                voice_crop_path = os.path.join(identity_voice_dir, "voice_3s.wav")
+
+                # Simple check if audio already exists to avoid re-downloading
+                if os.path.exists(voice_save_path):
+                    print("   -> Audio data already exists. Skipping.")
+                    continue
+
+                extract_multiple_faces(video_path, anon_id, video_id, FACE_DIR)
                 process_audio(video_path, voice_save_path)
-                
+                extract_center_crop(voice_save_path, voice_crop_path, crop_seconds=3.0)
+
                 os.remove(video_path)
-                
+
             except Exception as e:
-                print(f"   -> FAILED to process {identity}: {e}")
+                print(f"   -> FAILED to process {anon_id} ({name}): {e}")
 
     print("\nCorpus generation complete.")
 
