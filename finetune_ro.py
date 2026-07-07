@@ -9,8 +9,8 @@ from models import JointClassifier, ModalityTranslator, TransformerCrossAttentio
 from utils import supervised_contrastive_loss, EarlyStopping, cross_modal_alignment_loss
 
 # ---- Paths ----
-MAVCELEB_EMBEDDING_DIR = "/content/drive/MyDrive/Licenta_Colab/embeddings"
-RO_EMBEDDING_DIR = "/content/drive/MyDrive/Licenta_Colab/ro_embeddings_train"
+MAVCELEB_EMBEDDING_DIR = "/content/local_embeddings"
+RO_EMBEDDING_DIR = "/content/local_embeddings"
 OLD_CHECKPOINT_PATH = "/content/drive/MyDrive/Licenta_Colab/checkpoints/model_arcface.pth"
 NEW_CHECKPOINT_PATH = "/content/drive/MyDrive/Licenta_Colab/checkpoints/model_arcface_ro_finetuned.pth"
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         def __getitem__(self, idx):
             return self.data[idx]
 
-    full_dataset = SubsampledFinetuneDataset(MAVCELEB_EMBEDDING_DIR, RO_EMBEDDING_DIR)
+    full_dataset = SubsampledFinetuneDataset(MAVCELEB_EMBEDDING_DIR, RO_EMBEDDING_DIR, mavceleb_subset_size=2000, ro_repeat=10)
 
     train_size = int(0.9 * len(full_dataset))  # smaller val split since we're fine-tuning, not training from scratch
     val_size = len(full_dataset) - train_size
