@@ -77,8 +77,8 @@ if __name__ == "__main__":
         full_dataset, [train_size, val_size], generator=generator
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+    val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
     # ---- Build model with the EXPANDED class count ----
     model               = JointClassifier(num_classes=NUM_CLASSES, embedding_dim=512).to(DEVICE)
