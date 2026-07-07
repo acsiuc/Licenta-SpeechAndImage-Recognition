@@ -45,10 +45,6 @@ class MultiDirEmbeddingDataset(Dataset):
 if __name__ == "__main__":
 
     class SubsampledFinetuneDataset(Dataset):
-        """Uses ALL Romanian samples (repeated for stronger gradient signal)
-        plus a fixed random subset of the old MAVCeleb data, instead of the
-        full 98,828 samples every epoch. This makes each epoch much faster
-        and prevents the tiny Romanian signal from being drowned out."""
         def __init__(self, mavceleb_dir, ro_dir, mavceleb_subset_size=15000, ro_repeat=8, seed=42):
             mavceleb_files = glob.glob(os.path.join(mavceleb_dir, "*.pt"))
             ro_files = glob.glob(os.path.join(ro_dir, "*.pt"))
@@ -56,17 +52,25 @@ if __name__ == "__main__":
             rng = _random.Random(seed)
             mavceleb_sample = rng.sample(mavceleb_files, min(mavceleb_subset_size, len(mavceleb_files)))
 
-            self.files = mavceleb_sample + (ro_files * ro_repeat)
+            all_files = mavceleb_sample + (ro_files * ro_repeat)
             print(f"Subsampled dataset: {len(mavceleb_sample)} MAVCeleb samples "
                   f"+ {len(ro_files)} Romanian samples x{ro_repeat} repeats "
-                  f"= {len(self.files)} total")
+                  f"= {len(all_files)} total")
+
+            print("Preloading all samples into memory (one-time cost, avoids per-batch Drive reads)...")
+            self.data = []
+            for i, f in enumerate(all_files):
+                d = torch.load(f, weights_only=False)
+                self.data.append((d['face_emb'].squeeze(0), d['voice_emb'].squeeze(0), d['label']))
+                if i % 2000 == 0:
+                    print(f"  preloaded {i}/{len(all_files)}")
+            print(f"Preloading complete: {len(self.data)} samples in memory")
 
         def __len__(self):
-            return len(self.files)
+            return len(self.data)
 
         def __getitem__(self, idx):
-            data = torch.load(self.files[idx], weights_only=False)
-            return data['face_emb'].squeeze(0), data['voice_emb'].squeeze(0), data['label']
+            return self.data[idx]
 
     full_dataset = SubsampledFinetuneDataset(MAVCELEB_EMBEDDING_DIR, RO_EMBEDDING_DIR)
 
