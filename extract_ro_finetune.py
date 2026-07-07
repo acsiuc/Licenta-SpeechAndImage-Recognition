@@ -71,8 +71,13 @@ with torch.no_grad():
     for ident in TRAIN_IDS:
         label = id_to_label[ident]
 
-        face_paths = sorted(glob.glob(os.path.join(FACE_ROOT, ident, "*.jpg")))
-        full_voice_path = os.path.join(VOICE_ROOT, ident, "voice_full.wav")
+        face_paths = sorted(glob.glob(os.path.join(FACE_ROOT, ident, "*", "*.jpg")))
+        voice_full_matches = glob.glob(os.path.join(VOICE_ROOT, ident, "*", "voice_full.wav"))
+        full_voice_path = voice_full_matches[0] if voice_full_matches else None
+
+        if not face_paths or not full_voice_path:
+            print(f"Skipping {ident} — missing face or voice_full.wav")
+            continue
 
         if not face_paths or not os.path.exists(full_voice_path):
             print(f"Skipping {ident} — missing face or voice_full.wav")
