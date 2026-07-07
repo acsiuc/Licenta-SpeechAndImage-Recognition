@@ -53,8 +53,8 @@ if __name__ == "__main__":
         full_dataset, [train_size, val_size], generator=generator
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
 
     # ---- Build model with the EXPANDED class count ----
     model               = JointClassifier(num_classes=NUM_CLASSES, embedding_dim=512).to(DEVICE)
@@ -118,7 +118,9 @@ if __name__ == "__main__":
         transformer_fusion.train()
         total_train_loss = 0
 
-        for face_emb, voice_emb, labels in train_loader:
+        for batch_idx, (face_emb, voice_emb, labels) in enumerate(train_loader):
+            if batch_idx % 200 == 0:
+                print(f"  batch {batch_idx}/{len(train_loader)}")
             face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE)
 
             face_emb  = face_translator(face_emb)
