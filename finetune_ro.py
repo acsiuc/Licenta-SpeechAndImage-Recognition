@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import glob
-
+import random as _random
 from models import JointClassifier, ModalityTranslator, TransformerCrossAttention
 from utils import supervised_contrastive_loss, EarlyStopping, cross_modal_alignment_loss
 
@@ -44,7 +44,31 @@ class MultiDirEmbeddingDataset(Dataset):
 
 if __name__ == "__main__":
 
-    full_dataset = MultiDirEmbeddingDataset([MAVCELEB_EMBEDDING_DIR, RO_EMBEDDING_DIR])
+    class SubsampledFinetuneDataset(Dataset):
+        """Uses ALL Romanian samples (repeated for stronger gradient signal)
+        plus a fixed random subset of the old MAVCeleb data, instead of the
+        full 98,828 samples every epoch. This makes each epoch much faster
+        and prevents the tiny Romanian signal from being drowned out."""
+        def __init__(self, mavceleb_dir, ro_dir, mavceleb_subset_size=15000, ro_repeat=8, seed=42):
+            mavceleb_files = glob.glob(os.path.join(mavceleb_dir, "*.pt"))
+            ro_files = glob.glob(os.path.join(ro_dir, "*.pt"))
+
+            rng = _random.Random(seed)
+            mavceleb_sample = rng.sample(mavceleb_files, min(mavceleb_subset_size, len(mavceleb_files)))
+
+            self.files = mavceleb_sample + (ro_files * ro_repeat)
+            print(f"Subsampled dataset: {len(mavceleb_sample)} MAVCeleb samples "
+                  f"+ {len(ro_files)} Romanian samples x{ro_repeat} repeats "
+                  f"= {len(self.files)} total")
+
+        def __len__(self):
+            return len(self.files)
+
+        def __getitem__(self, idx):
+            data = torch.load(self.files[idx], weights_only=False)
+            return data['face_emb'].squeeze(0), data['voice_emb'].squeeze(0), data['label']
+
+    full_dataset = SubsampledFinetuneDataset(MAVCELEB_EMBEDDING_DIR, RO_EMBEDDING_DIR)
 
     train_size = int(0.9 * len(full_dataset))  # smaller val split since we're fine-tuning, not training from scratch
     val_size = len(full_dataset) - train_size
