@@ -15,7 +15,7 @@ RO_ROOT = "/content/drive/MyDrive/Licenta_Colab/ro_facevoice"
 FACE_ROOT = os.path.join(RO_ROOT, "faces", "Romanian")
 VOICE_ROOT = os.path.join(RO_ROOT, "voices", "Romanian")
 
-OUTPUT_DIR = "/content/drive/MyDrive/Licenta_Colab/embeddings"  # same folder as your MAVCeleb embeddings
+OUTPUT_DIR = "/content/drive/MyDrive/Licenta_Colab/ro_embeddings_train"  # same folder as your MAVCeleb embeddings
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # 33 training identities (10 held out for testing: ID002, ID011, ID012, ID013, ID027, ID029, ID035, ID036, ID037, ID045)
