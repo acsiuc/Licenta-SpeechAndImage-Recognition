@@ -146,6 +146,8 @@ if __name__ == "__main__":
             if batch_idx % 200 == 0:
                 print(f"  batch {batch_idx}/{len(train_loader)}")
             face_emb, voice_emb, labels = face_emb.to(DEVICE), voice_emb.to(DEVICE), labels.to(DEVICE)
+            if batch_idx == 0:
+                print(f"  [device check] face_emb on: {face_emb.device}, GPU memory: {torch.cuda.memory_allocated()/1e9:.3f} GB")
 
             face_emb  = face_translator(face_emb)
             voice_emb = voice_translator(voice_emb)
